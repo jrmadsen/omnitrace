@@ -80,7 +80,7 @@ struct thread_deleter
 template <typename Tp, typename Tag = void, size_t MaxThreads = max_supported_threads>
 struct thread_data
 {
-    using instance_array_t  = std::array<unique_ptr_t<Tp>, MaxThreads>;
+    using instance_array_t  = std::vector<unique_ptr_t<Tp>>;
     using construct_on_init = std::true_type;
 
     template <typename... Args>
@@ -92,7 +92,11 @@ struct thread_data
     template <typename... Args>
     static instance_array_t& instances(construct_on_init, Args&&...);
 
-    static constexpr size_t size() { return MaxThreads; }
+    static size_t size()
+    {
+        static auto _v = tim::get_env("OMNITRACE_MAX_THREADS", MaxThreads);
+        return _v;
+    }
 
     decltype(auto) begin() { return instances().begin(); }
     decltype(auto) end() { return instances().end(); }
@@ -127,7 +131,7 @@ template <typename Tp, typename Tag, size_t MaxThreads>
 typename thread_data<Tp, Tag, MaxThreads>::instance_array_t&
 thread_data<Tp, Tag, MaxThreads>::instances()
 {
-    static auto _v = instance_array_t{};
+    static auto _v = instance_array_t(size());
     return _v;
 }
 
@@ -147,8 +151,8 @@ thread_data<Tp, Tag, MaxThreads>::instances(construct_on_init, Args&&... _args)
 {
     static auto& _v = [&]() -> instance_array_t& {
         auto& _internal = instances();
-        for(size_t i = 0; i < MaxThreads; ++i)
-            _internal.at(i) = unique_ptr_t<Tp>{ new Tp(std::forward<Args>(_args)...) };
+        for(auto& itr : _internal)
+            itr = unique_ptr_t<Tp>{ new Tp(std::forward<Args>(_args)...) };
         return _internal;
     }();
     return _v;

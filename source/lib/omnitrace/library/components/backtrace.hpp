@@ -96,6 +96,7 @@ private:
     int64_t           m_mem_peak   = 0;
     int64_t           m_ctx_swch   = 0;
     int64_t           m_page_flt   = 0;
+    float             m_util       = 0.0f;
     uint64_t          m_ts         = {};
     size_t            m_size       = 0;
     data_t            m_data       = {};

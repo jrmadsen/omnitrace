@@ -74,6 +74,8 @@
         perfetto::Category("process_kernel_cpu_time")                                    \
             .SetDescription("CPU time of functions executing in kernel-space in "        \
                             "process in seconds (collected in background thread)"),      \
+        perfetto::Category("process_cpu_utilization")                                    \
+            .SetDescription("CPU utilization (collected in background thread)"),         \
         perfetto::Category("mpi").SetDescription("MPI regions"),                         \
         perfetto::Category("kokkos").SetDescription("Kokkos regions"),                   \
         perfetto::Category("ompt").SetDescription("OpenMP Tools regions"),               \

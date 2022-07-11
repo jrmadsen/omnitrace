@@ -28,6 +28,7 @@
 #include "library/defines.hpp"
 #include "library/perfetto.hpp"
 #include "library/timemory.hpp"
+#include "timemory/components/timing/components.hpp"
 
 #include <timemory/components/rusage/backends.hpp>
 #include <timemory/mpl/types.hpp>
@@ -67,8 +68,10 @@ struct cpu_user_mode_time
 {};
 struct cpu_kernel_mode_time
 {};
+struct cpu_util
+{};
 using cpu_data_tuple_t = std::tuple<size_t, int64_t, int64_t, int64_t, int64_t, int64_t,
-                                    int64_t, std::vector<double>>;
+                                    int64_t, float, std::vector<double>>;
 
 std::set<size_t>             enabled_cpu_freqs = {};
 std::deque<cpu_data_tuple_t> cpu_data          = {};
@@ -93,6 +96,7 @@ TIMEMORY_DEFINE_NAME_TRAIT("process_user_cpu_time",
                            omnitrace::cpu_freq::cpu_user_mode_time);
 TIMEMORY_DEFINE_NAME_TRAIT("process_kernel_cpu_time",
                            omnitrace::cpu_freq::cpu_kernel_mode_time);
+TIMEMORY_DEFINE_NAME_TRAIT("process_cpu_utilization", omnitrace::cpu_freq::cpu_util);
 
 namespace omnitrace
 {
@@ -103,7 +107,7 @@ setup()
 {
     init_perfetto_counter_tracks(
         type_list<cpu_freq, cpu_page, cpu_virt, cpu_context_switch, cpu_page_fault,
-                  cpu_user_mode_time, cpu_kernel_mode_time>{});
+                  cpu_user_mode_time, cpu_kernel_mode_time, cpu_util>{});
 }
 
 void
@@ -207,14 +211,16 @@ sample()
     auto _ts = tim::get_clock_real_now<size_t, std::nano>();
 
     tim::rusage_cache _rcache{ RUSAGE_SELF };
+    auto              _util_p = comp::cpu_util::record();
+    auto _util = static_cast<float>(_util_p.first) / static_cast<float>(_util_p.second);
     // user and kernel mode times are in microseconds
-    cpu_data.emplace_back(_ts, tim::get_page_rss(), tim::get_virt_mem(),
-                          _rcache.get_num_priority_context_switch() +
-                              _rcache.get_num_voluntary_context_switch(),
-                          _rcache.get_num_major_page_faults() +
-                              _rcache.get_num_minor_page_faults(),
-                          _rcache.get_user_mode_time() * 1000,
-                          _rcache.get_kernel_mode_time() * 1000, std::move(_freqs));
+    cpu_data.emplace_back(
+        _ts, tim::get_page_rss(), tim::get_virt_mem(),
+        _rcache.get_num_priority_context_switch() +
+            _rcache.get_num_voluntary_context_switch(),
+        _rcache.get_num_major_page_faults() + _rcache.get_num_minor_page_faults(),
+        _rcache.get_user_mode_time() * 1000, _rcache.get_kernel_mode_time() * 1000, _util,
+        std::move(_freqs));
 }
 
 void
@@ -269,7 +275,7 @@ post_process()
         for(auto& itr : cpu_data)
         {
             uint64_t _ts   = std::get<0>(itr);
-            double   _freq = std::get<7>(itr).at(_offset);
+            double   _freq = std::get<8>(itr).at(_offset);
             if(!pthread_create_gotcha::is_valid_execution_time(0, _ts)) continue;
             TRACE_COUNTER("cpu_freq", freq_track::at(_idx, 0), _ts, _freq);
         }
@@ -281,10 +287,10 @@ post_process()
     auto _process_cpu_rusage = []() {
         config_perfetto_counter_tracks(
             type_list<cpu_page, cpu_virt, cpu_context_switch, cpu_page_fault,
-                      cpu_user_mode_time, cpu_kernel_mode_time>{},
+                      cpu_user_mode_time, cpu_kernel_mode_time, cpu_util>{},
             { "Memory Usage", "Virtual Memory Usage", "Context Switches", "Page Faults",
-              "User Time", "Kernel Time" },
-            { "MB", "MB", "", "", "sec", "sec" });
+              "User Time", "Kernel Time", "Utilization" },
+            { "MB", "MB", "", "", "sec", "sec", "%" });
 
         for(auto& itr : cpu_data)
         {
@@ -297,12 +303,14 @@ post_process()
             uint64_t _flts = std::get<4>(itr);
             double   _user = std::get<5>(itr);
             double   _kern = std::get<6>(itr);
+            double   _util = std::get<7>(itr) * 100.0f;
             write_perfetto_counter_track<cpu_page>(_ts, _page / units::megabyte);
             write_perfetto_counter_track<cpu_virt>(_ts, _virt / units::megabyte);
             write_perfetto_counter_track<cpu_context_switch>(_ts, _cntx);
             write_perfetto_counter_track<cpu_page_fault>(_ts, _flts);
             write_perfetto_counter_track<cpu_user_mode_time>(_ts, _user / units::sec);
             write_perfetto_counter_track<cpu_kernel_mode_time>(_ts, _kern / units::sec);
+            write_perfetto_counter_track<cpu_util>(_ts, _util);
         }
 
         auto _end_ts = pthread_create_gotcha::get_execution_time(0)->second;
@@ -312,6 +320,7 @@ post_process()
         write_perfetto_counter_track<cpu_page_fault>(_end_ts, 0);
         write_perfetto_counter_track<cpu_user_mode_time>(_end_ts, 0);
         write_perfetto_counter_track<cpu_kernel_mode_time>(_end_ts, 0);
+        write_perfetto_counter_track<cpu_util>(_end_ts, 0);
     };
 
     _process_cpu_rusage();

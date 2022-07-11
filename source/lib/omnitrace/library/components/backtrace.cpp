@@ -274,13 +274,15 @@ backtrace::sample(int signum)
 
     m_size       = 0;
     m_tid        = threading::get_id();
-    m_ts         = comp::wall_clock::record();
-    m_thr_cpu_ts = tim::get_clock_thread_now<int64_t, std::nano>();
+    auto _util   = comp::thread_cpu_util::record();
     auto _cache  = tim::rusage_cache{ RUSAGE_THREAD };
+    m_ts         = _util.second;
+    m_thr_cpu_ts = _util.first;
     m_mem_peak   = _cache.get_peak_rss();
-    m_ctx_swch   = _cache.get_num_priority_context_switch() +
-                 _cache.get_num_voluntary_context_switch();
+    m_ctx_swch   = (_cache.get_num_priority_context_switch() +
+                  _cache.get_num_voluntary_context_switch());
     m_page_flt = _cache.get_num_major_page_faults() + _cache.get_num_minor_page_faults();
+    m_util     = static_cast<float>(_util.first) / static_cast<float>(_util.second);
     m_data     = tim::get_unw_backtrace<stack_depth, 4, false>();
     auto* itr  = m_data.begin();
     for(; itr != m_data.end(); ++itr, ++m_size)
@@ -490,6 +492,8 @@ backtrace::post_process(int64_t _tid)
                 _tid, JOIN(' ', "Thread Context Switches", _tid_name, "(S)"));
             perfetto_counter_track<perfetto_rusage>::emplace(
                 _tid, JOIN(' ', "Thread Page Faults", _tid_name, "(S)"));
+            perfetto_counter_track<perfetto_rusage>::emplace(
+                _tid, JOIN(' ', "Thread CPU Utilization", _tid_name, "(S)"));
         }
 
         if(!perfetto_counter_track<hw_counters>::exists(_tid) &&
@@ -523,6 +527,10 @@ backtrace::post_process(int64_t _tid)
             TRACE_COUNTER("thread_context_switch",
                           perfetto_counter_track<perfetto_rusage>::at(_tid, 1), _ts,
                           _bt->m_ctx_swch);
+
+            TRACE_COUNTER("thread_page_fault",
+                          perfetto_counter_track<perfetto_rusage>::at(_tid, 2), _ts,
+                          _bt->m_page_flt);
 
             TRACE_COUNTER("thread_page_fault",
                           perfetto_counter_track<perfetto_rusage>::at(_tid, 2), _ts,
