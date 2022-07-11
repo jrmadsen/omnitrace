@@ -89,7 +89,7 @@ get_cpu_cid_entry(uint64_t _cid, int64_t _tid = threading::get_id()) TIMEMORY_HO
 tim::mutex_t&
 get_cpu_cid_stack_lock(int64_t _tid = threading::get_id()) TIMEMORY_HOT;
 
-ThreadState&
+ThreadState
 get_thread_state() TIMEMORY_HOT;
 
 /// returns old state

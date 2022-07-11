@@ -172,35 +172,45 @@ get_gotcha_bundle()
 
 namespace
 {
+using thread_state_t = std::pair<ThreadState, uint32_t>;
+
 auto&
 get_thread_state_history(int64_t _idx = utility::get_thread_index())
 {
     static auto _v = utility::get_filled_array<OMNITRACE_MAX_THREADS>(
-        []() { return utility::get_reserved_vector<ThreadState>(32); });
+        []() { return utility::get_reserved_vector<thread_state_t>(32); });
 
     return _v.at(_idx);
 }
+
+thread_state_t&
+get_internal_thread_state()
+{
+    static thread_local auto _v = thread_state_t{ ThreadState::Enabled, 0 };
+    return _v;
+}
 }  // namespace
 
-ThreadState&
+ThreadState
 get_thread_state()
 {
-    static thread_local ThreadState _v{ ThreadState::Enabled };
-    return _v;
+    return get_internal_thread_state().first;
 }
 
 ThreadState
 set_thread_state(ThreadState _n)
 {
-    auto _o            = get_thread_state();
-    get_thread_state() = _n;
+    auto _o            = get_internal_thread_state().first;
+    get_internal_thread_state() = { _n, 0 };
     return _o;
 }
 
 ThreadState
 push_thread_state(ThreadState _v)
 {
-    return get_thread_state_history().emplace_back(set_thread_state(_v));
+    auto& _o = get_internal_thread_state();
+    if(_o.first == _v) return (++_o.second, _o.first);
+    return get_thread_state_history().emplace_back(thread_state_t{ _v, 0 }).first;
 }
 
 ThreadState
@@ -209,8 +219,15 @@ pop_thread_state()
     auto& _hist = get_thread_state_history();
     if(!_hist.empty())
     {
-        set_thread_state(_hist.back());
-        _hist.pop_back();
+        if(_hist.back().second > 0)
+        {
+            --get_internal_thread_state().second;
+        }
+        else
+        {
+            get_internal_thread_state() = _hist.back();
+            _hist.pop_back();
+        }
     }
     return get_thread_state();
 }
