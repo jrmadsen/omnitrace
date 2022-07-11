@@ -48,16 +48,16 @@ extern "C"
     void omnitrace_set_mpi(bool use, bool attached) OMNITRACE_PUBLIC_API;
 
     /// starts an instrumentation region
-    void omnitrace_push_trace(const char* name) OMNITRACE_PUBLIC_API;
+    void omnitrace_push_trace(const char* name) OMNITRACE_PUBLIC_API OMNITRACE_WEAK;
 
     /// stops an instrumentation region
-    void omnitrace_pop_trace(const char* name) OMNITRACE_PUBLIC_API;
+    void omnitrace_pop_trace(const char* name) OMNITRACE_PUBLIC_API OMNITRACE_WEAK;
 
     /// starts an instrumentation region (user-defined)
-    int omnitrace_push_region(const char* name) OMNITRACE_PUBLIC_API;
+    int omnitrace_push_region(const char* name) OMNITRACE_PUBLIC_API OMNITRACE_WEAK;
 
     /// stops an instrumentation region (user-defined)
-    int omnitrace_pop_region(const char* name) OMNITRACE_PUBLIC_API;
+    int omnitrace_pop_region(const char* name) OMNITRACE_PUBLIC_API OMNITRACE_WEAK;
 
     /// stores source code information
     void omnitrace_register_source(const char* file, const char* func, size_t line,

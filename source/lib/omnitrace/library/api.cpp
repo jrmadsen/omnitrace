@@ -26,19 +26,21 @@
 #include <exception>
 #include <stdexcept>
 
-extern "C" void
+extern "C"
+{
+void
 omnitrace_push_trace(const char* _name)
 {
     omnitrace_push_trace_hidden(_name);
 }
 
-extern "C" void
+void
 omnitrace_pop_trace(const char* _name)
 {
     omnitrace_pop_trace_hidden(_name);
 }
 
-extern "C" int
+int
 omnitrace_push_region(const char* _name)
 {
     try
@@ -52,7 +54,7 @@ omnitrace_push_region(const char* _name)
     return 0;
 }
 
-extern "C" int
+int
 omnitrace_pop_region(const char* _name)
 {
     try
@@ -66,45 +68,46 @@ omnitrace_pop_region(const char* _name)
     return 0;
 }
 
-extern "C" void
+void
 omnitrace_init_library(void)
 {
     omnitrace_init_library_hidden();
 }
 
-extern "C" void
+void
 omnitrace_init(const char* _mode, bool _rewrite, const char* _arg0)
 {
     omnitrace_init_hidden(_mode, _rewrite, _arg0);
 }
 
-extern "C" void
+void
 omnitrace_finalize(void)
 {
     omnitrace_finalize_hidden();
 }
 
-extern "C" void
+void
 omnitrace_set_env(const char* env_name, const char* env_val)
 {
     omnitrace_set_env_hidden(env_name, env_val);
 }
 
-extern "C" void
+void
 omnitrace_set_mpi(bool use, bool attached)
 {
     omnitrace_set_mpi_hidden(use, attached);
 }
 
-extern "C" void
+void
 omnitrace_register_source(const char* file, const char* func, size_t line, size_t address,
                           const char* source)
 {
     omnitrace_register_source_hidden(file, func, line, address, source);
 }
 
-extern "C" void
+void
 omnitrace_register_coverage(const char* file, const char* func, size_t address)
 {
     omnitrace_register_coverage_hidden(file, func, address);
+}
 }
