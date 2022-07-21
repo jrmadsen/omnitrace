@@ -419,6 +419,8 @@ backtrace::post_process(int64_t _tid)
         return;
     }
 
+    scope::destructor _dtor{ [&_sampler]() { _sampler.reset(); } };
+
     auto& _init = backtrace_init_instances::instances().at(_tid);
     if(!_init)
     {
@@ -462,10 +464,10 @@ backtrace::post_process(int64_t _tid)
         return std::string{ _lbl }.replace(_pos, _dyninst.length(), "");
     };
 
-    using common_type_t = typename hw_counters::common_type;
-    auto _hw_cnt_labels = (get_papi_vector(_tid))
-                              ? comp::papi_common::get_events<common_type_t>()
-                              : std::vector<std::string>{};
+    using common_type_t  = typename hw_counters::common_type;
+    auto& _papi_vec      = get_papi_vector(_tid);
+    auto  _hw_cnt_labels = (_papi_vec) ? comp::papi_common::get_events<common_type_t>()
+                                       : std::vector<std::string>{};
 
     auto _process_perfetto_counters = [&](const std::vector<sampling::bundle_t*>& _data) {
         auto _tid_name = JOIN("", '[', _tid, ']');

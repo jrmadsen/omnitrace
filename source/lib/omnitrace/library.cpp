@@ -756,10 +756,20 @@ omnitrace_init_hidden(const char* _mode, bool _is_binary_rewrite, const char* _a
 extern "C" void
 omnitrace_finalize_hidden(void)
 {
+    static std::mutex            _finalize_lock{};
+    std::unique_lock<std::mutex> _lk{ _finalize_lock, std::defer_lock };
+    if(_lk.owns_lock())
+        return;
+    else
+        _lk.lock();
+
     // disable thread id recycling during finalization
     threading::recycle_ids() = false;
 
     set_thread_state(ThreadState::Completed);
+
+    tim::sampling::block_signals({ SIGALRM, SIGPROF },
+                                 tim::sampling::sigmask_scope::process);
 
     // return if not active
     if(get_state() != State::Active)
@@ -795,12 +805,12 @@ omnitrace_finalize_hidden(void)
     pthread_gotcha::push_enable_sampling_on_child_threads(false);
     pthread_gotcha::set_sampling_on_all_future_threads(false);
 
-    auto _debug_init  = get_debug_finalize();
-    auto _debug_value = get_debug();
+    auto _debug_init = get_debug_finalize();
+    // auto _debug_value = get_debug();
     if(_debug_init) config::set_setting_value("OMNITRACE_DEBUG", true);
-    scope::destructor _debug_dtor{ [_debug_value, _debug_init]() {
-        if(_debug_init) config::set_setting_value("OMNITRACE_DEBUG", _debug_value);
-    } };
+    // scope::destructor _debug_dtor{ [_debug_value, _debug_init]() {
+    // if(_debug_init) config::set_setting_value("OMNITRACE_DEBUG", _debug_value);
+    //} };
 
     OMNITRACE_DEBUG_F("\n");
 

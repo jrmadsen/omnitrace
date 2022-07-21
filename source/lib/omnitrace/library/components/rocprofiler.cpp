@@ -177,8 +177,8 @@ rocprofiler::setup()
 void
 rocprofiler::shutdown()
 {
-    omnitrace::rocprofiler::post_process();
     omnitrace::rocprofiler::rocm_cleanup();
+    omnitrace::rocprofiler::post_process();
     /*
     using storage_type = typename rocprofiler_data::storage_type;
     using bundle_t     = rocprofiler_data;

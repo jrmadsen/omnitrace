@@ -22,6 +22,7 @@
 
 #include "library/rocprofiler.hpp"
 #include "library/common.hpp"
+#include "library/components/rocprofiler.hpp"
 #include "library/config.hpp"
 #include "library/debug.hpp"
 #include "library/gpu.hpp"
@@ -791,6 +792,9 @@ post_process()
             post_process_timemory();
         }
     }
+
+    for(size_t i = 0; i < OMNITRACE_MAX_THREADS; ++i)
+        comp::rocm_data(i).reset();
 }
 }  // namespace rocprofiler
 }  // namespace omnitrace

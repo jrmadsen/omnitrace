@@ -1119,7 +1119,7 @@ bool
 get_debug_env()
 {
     return (settings_are_configured()) ? get_debug()
-                                       : tim::get_env<bool>("OMNITRACE_DEBUG", false);
+                                       : tim::get_env<bool>("OMNITRACE_DEBUG", false, false);
 }
 
 bool
@@ -1162,7 +1162,7 @@ int
 get_verbose_env()
 {
     return (settings_are_configured()) ? get_verbose()
-                                       : tim::get_env<int>("OMNITRACE_VERBOSE", 0);
+                                       : tim::get_env<int>("OMNITRACE_VERBOSE", 0, false);
 }
 
 int
