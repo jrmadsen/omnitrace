@@ -89,9 +89,9 @@ get_thread_pool_state()
 PTL::ThreadPool&
 get_thread_pool()
 {
-    static auto _v =
-        (get_thread_pool_state() = State::Active, PTL::ThreadPool{ _thread_pool_cfg() });
-    return _v;
+    static auto* _v = (get_thread_pool_state() = State::Active,
+                       new PTL::ThreadPool{ _thread_pool_cfg() });
+    return *_v;
 }
 }  // namespace
 

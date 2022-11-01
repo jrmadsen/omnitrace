@@ -92,7 +92,7 @@ category_region<CategoryT>::start(std::string_view name, Args&&... args)
 {
     // unconditionally return if thread is disabled or finalized
     if(get_thread_state() == ThreadState::Disabled) return;
-    if(get_state() == State::Finalized) return;
+    if(get_state() >= State::Finalized) return;
 
     OMNITRACE_SCOPED_THREAD_STATE(ThreadState::Internal);
 
