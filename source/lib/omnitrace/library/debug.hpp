@@ -85,6 +85,12 @@ set_source_location(source_location&&);
 FILE*
 get_file();
 //
+void
+close_file();
+//
+int64_t
+get_tid();
+//
 inline void
 flush()
 {
@@ -146,7 +152,7 @@ get_chars(T&& _c, std::index_sequence<Idx...>)
 #endif
 
 #if !defined(OMNITRACE_DEBUG_THREAD_IDENTIFIER)
-#    define OMNITRACE_DEBUG_THREAD_IDENTIFIER ::tim::threading::get_id()
+#    define OMNITRACE_DEBUG_THREAD_IDENTIFIER ::omnitrace::debug::get_tid()
 #endif
 
 #if !defined(OMNITRACE_SOURCE_LOCATION)
@@ -213,7 +219,8 @@ get_chars(T&& _c, std::index_sequence<Idx...>)
         ::omnitrace::debug::flush();                                                     \
         ::omnitrace::debug::lock _debug_lk{};                                            \
         OMNITRACE_FPRINTF_STDERR_COLOR(info);                                            \
-        fprintf(::omnitrace::debug::get_file(), "[omnitrace]%s",                         \
+        fprintf(::omnitrace::debug::get_file(), "[omnitrace][%i]%s",                     \
+                OMNITRACE_DEBUG_PROCESS_IDENTIFIER,                                      \
                 ::omnitrace::debug::is_bracket(__VA_ARGS__) ? "" : " ");                 \
         fprintf(::omnitrace::debug::get_file(), __VA_ARGS__);                            \
         ::omnitrace::debug::flush();                                                     \
@@ -241,7 +248,8 @@ get_chars(T&& _c, std::index_sequence<Idx...>)
         ::omnitrace::debug::flush();                                                     \
         ::omnitrace::debug::lock _debug_lk{};                                            \
         OMNITRACE_FPRINTF_STDERR_COLOR(info);                                            \
-        fprintf(::omnitrace::debug::get_file(), "[omnitrace][%s]%s", OMNITRACE_FUNCTION, \
+        fprintf(::omnitrace::debug::get_file(), "[omnitrace][%i][%s]%s",                 \
+                OMNITRACE_DEBUG_PROCESS_IDENTIFIER, OMNITRACE_FUNCTION,                  \
                 ::omnitrace::debug::is_bracket(__VA_ARGS__) ? "" : " ");                 \
         fprintf(::omnitrace::debug::get_file(), __VA_ARGS__);                            \
         ::omnitrace::debug::flush();                                                     \
@@ -270,7 +278,8 @@ get_chars(T&& _c, std::index_sequence<Idx...>)
         ::omnitrace::debug::flush();                                                     \
         ::omnitrace::debug::lock _debug_lk{};                                            \
         OMNITRACE_FPRINTF_STDERR_COLOR(warning);                                         \
-        fprintf(::omnitrace::debug::get_file(), "[omnitrace]%s",                         \
+        fprintf(::omnitrace::debug::get_file(), "[omnitrace][%i]%s",                     \
+                OMNITRACE_DEBUG_PROCESS_IDENTIFIER,                                      \
                 ::omnitrace::debug::is_bracket(__VA_ARGS__) ? "" : " ");                 \
         fprintf(::omnitrace::debug::get_file(), __VA_ARGS__);                            \
         ::omnitrace::debug::flush();                                                     \
@@ -298,7 +307,8 @@ get_chars(T&& _c, std::index_sequence<Idx...>)
         ::omnitrace::debug::flush();                                                     \
         ::omnitrace::debug::lock _debug_lk{};                                            \
         OMNITRACE_FPRINTF_STDERR_COLOR(warning);                                         \
-        fprintf(::omnitrace::debug::get_file(), "[omnitrace][%s]%s", OMNITRACE_FUNCTION, \
+        fprintf(::omnitrace::debug::get_file(), "[omnitrace][%i][%s]%s",                 \
+                OMNITRACE_DEBUG_PROCESS_IDENTIFIER, OMNITRACE_FUNCTION,                  \
                 ::omnitrace::debug::is_bracket(__VA_ARGS__) ? "" : " ");                 \
         fprintf(::omnitrace::debug::get_file(), __VA_ARGS__);                            \
         ::omnitrace::debug::flush();                                                     \
@@ -324,8 +334,8 @@ get_chars(T&& _c, std::index_sequence<Idx...>)
     if(COND)                                                                             \
     {                                                                                    \
         char _msg_buffer[OMNITRACE_DEBUG_BUFFER_LEN];                                    \
-        snprintf(_msg_buffer, OMNITRACE_DEBUG_BUFFER_LEN, "[omnitrace][%s]%s",           \
-                 OMNITRACE_FUNCTION,                                                     \
+        snprintf(_msg_buffer, OMNITRACE_DEBUG_BUFFER_LEN, "[omnitrace][%i][%s]%s",       \
+                 OMNITRACE_DEBUG_PROCESS_IDENTIFIER, OMNITRACE_FUNCTION,                 \
                  ::omnitrace::debug::is_bracket(__VA_ARGS__) ? "" : " ");                \
         auto len = strlen(_msg_buffer);                                                  \
         snprintf(_msg_buffer + len, OMNITRACE_DEBUG_BUFFER_LEN - len, __VA_ARGS__);      \
@@ -354,7 +364,6 @@ get_chars(T&& _c, std::index_sequence<Idx...>)
         fprintf(::omnitrace::debug::get_file(), __VA_ARGS__);                            \
         ::omnitrace::debug::flush();                                                     \
         ::omnitrace::set_state(::omnitrace::State::Finalized);                           \
-        ::tim::signals::disable_signal_detection();                                      \
         timemory_print_demangled_backtrace<64>();                                        \
         METHOD;                                                                          \
     }
@@ -364,12 +373,12 @@ get_chars(T&& _c, std::index_sequence<Idx...>)
     {                                                                                    \
         ::omnitrace::debug::flush();                                                     \
         OMNITRACE_FPRINTF_STDERR_COLOR(fatal);                                           \
-        fprintf(::omnitrace::debug::get_file(), "[omnitrace]%s",                         \
+        fprintf(::omnitrace::debug::get_file(), "[omnitrace][%i]%s",                     \
+                OMNITRACE_DEBUG_PROCESS_IDENTIFIER,                                      \
                 ::omnitrace::debug::is_bracket(__VA_ARGS__) ? "" : " ");                 \
         fprintf(::omnitrace::debug::get_file(), __VA_ARGS__);                            \
         ::omnitrace::debug::flush();                                                     \
         ::omnitrace::set_state(::omnitrace::State::Finalized);                           \
-        ::tim::signals::disable_signal_detection();                                      \
         timemory_print_demangled_backtrace<64>();                                        \
         METHOD;                                                                          \
     }
@@ -386,7 +395,6 @@ get_chars(T&& _c, std::index_sequence<Idx...>)
         fprintf(::omnitrace::debug::get_file(), __VA_ARGS__);                            \
         ::omnitrace::debug::flush();                                                     \
         ::omnitrace::set_state(::omnitrace::State::Finalized);                           \
-        ::tim::signals::disable_signal_detection();                                      \
         timemory_print_demangled_backtrace<64>();                                        \
         METHOD;                                                                          \
     }
@@ -396,12 +404,12 @@ get_chars(T&& _c, std::index_sequence<Idx...>)
     {                                                                                    \
         ::omnitrace::debug::flush();                                                     \
         OMNITRACE_FPRINTF_STDERR_COLOR(fatal);                                           \
-        fprintf(::omnitrace::debug::get_file(), "[omnitrace][%s]%s", OMNITRACE_FUNCTION, \
+        fprintf(::omnitrace::debug::get_file(), "[omnitrace][%i][%s]%s",                 \
+                OMNITRACE_DEBUG_PROCESS_IDENTIFIER, OMNITRACE_FUNCTION,                  \
                 ::omnitrace::debug::is_bracket(__VA_ARGS__) ? "" : " ");                 \
         fprintf(::omnitrace::debug::get_file(), __VA_ARGS__);                            \
         ::omnitrace::debug::flush();                                                     \
         ::omnitrace::set_state(::omnitrace::State::Finalized);                           \
-        ::tim::signals::disable_signal_detection();                                      \
         timemory_print_demangled_backtrace<64>();                                        \
         METHOD;                                                                          \
     }
