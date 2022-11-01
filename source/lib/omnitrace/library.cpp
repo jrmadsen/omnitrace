@@ -20,10 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// clang-format off
 #include <timemory/log/color.hpp>
-// clang-format on
-
+//
+// include log color first
+//
 #include "api.hpp"
 #include "common/setup.hpp"
 #include "library/components/category_region.hpp"
@@ -51,14 +51,15 @@
 #include "library/timemory.hpp"
 #include "library/tracing.hpp"
 
-#include <timemory/signals/signal_handlers.hpp>
-#include <timemory/signals/types.hpp>
 #include <timemory/hash/types.hpp>
 #include <timemory/manager/manager.hpp>
 #include <timemory/operations/types/file_output_message.hpp>
-#include <timemory/signals/signal_mask.hpp>
 #include <timemory/settings/types.hpp>
+#include <timemory/signals/signal_handlers.hpp>
+#include <timemory/signals/signal_mask.hpp>
+#include <timemory/signals/types.hpp>
 #include <timemory/utility/backtrace.hpp>
+#include <timemory/utility/join.hpp>
 #include <timemory/utility/procfs/maps.hpp>
 
 #include <atomic>
@@ -145,8 +146,42 @@ is_system_backend()
     return (get_backend() != "inprocess");
 }
 
-using Device = critical_trace::Device;
-using Phase  = critical_trace::Phase;
+template <typename... Tp>
+struct basic_bundle : private std::tuple<Tp...>
+{
+    using base_type           = std::tuple<Tp...>;
+    using this_type           = basic_bundle<Tp...>;
+    static constexpr size_t N = sizeof...(Tp);
+
+    this_type& start()
+    {
+        OMNITRACE_FOLD_EXPRESSION(
+            std::get<tim::index_of<Tp, base_type>::value>(*this).start());
+        return *this;
+    }
+
+    this_type& stop()
+    {
+        OMNITRACE_FOLD_EXPRESSION(
+            std::get<tim::index_of<Tp, base_type>::value>(*this).stop());
+        return *this;
+    }
+
+    std::string as_string(std::string_view _prefix = {}) const
+    {
+        using array_config               = timemory::join::array_config;
+        std::array<std::string, N> _data = {};
+        OMNITRACE_FOLD_EXPRESSION(
+            _data.at(tim::index_of<Tp, base_type>::value) =
+                JOIN("", std::get<tim::index_of<Tp, base_type>::value>(*this)));
+        return timemory::join::join(array_config{ ", ", _prefix }, _data);
+    }
+};
+
+using Device        = critical_trace::Device;
+using Phase         = critical_trace::Phase;
+using fini_bundle_t = basic_bundle<comp::wall_clock, comp::cpu_clock, comp::peak_rss,
+                                   comp::page_rss, comp::cpu_util>;
 }  // namespace
 
 //======================================================================================//
@@ -592,6 +627,10 @@ omnitrace_finalize_hidden(void)
     // disable thread id recycling during finalization
     threading::recycle_ids() = false;
 
+    bool _is_child =
+        get_env("OMNITRACE_CHILD_PROCESS", false) ||
+        (get_env("OMNITRACE_ROOT_PROCESS", process::get_id()) != process::get_id());
+
     set_thread_state(ThreadState::Completed);
 
     // return if not active
@@ -599,6 +638,12 @@ omnitrace_finalize_hidden(void)
     {
         OMNITRACE_BASIC_DEBUG_F("State = %s. Finalization skipped\n",
                                 std::to_string(get_state()).c_str());
+        return;
+    }
+    else if(_is_child)
+    {
+        set_state(State::Finalized);
+        std::quick_exit(EXIT_SUCCESS);
         return;
     }
 
@@ -659,11 +704,7 @@ omnitrace_finalize_hidden(void)
     tim::signals::enable_signal_detection({ tim::signals::sys_signal::Interrupt },
                                           [](int) {});
 
-    std::string              _bundle_name = OMNITRACE_FUNCTION;
-    comp::user_global_bundle _bundle{ _bundle_name.c_str() };
-    _bundle.clear();
-    _bundle.insert<comp::wall_clock, comp::cpu_clock, comp::peak_rss, comp::page_rss,
-                   comp::cpu_util>();
+    auto _bundle = fini_bundle_t{};
     _bundle.start();
 
     OMNITRACE_DEBUG_F("Copying over all timemory hash information to main thread...\n");
@@ -959,18 +1000,6 @@ omnitrace_finalize_hidden(void)
         }
     }
 
-    _bundle.stop();
-    auto _get_metric = [](auto* _v, std::string_view _tail) -> std::string {
-        return (_v) ? JOIN("", *_v, _tail) : std::string{};
-    };
-
-    OMNITRACE_VERBOSE_F(0, "Finalization metrics: %s%s%s%s%s\n",
-                        _get_metric(_bundle.get<comp::wall_clock>(), ", ").c_str(),
-                        _get_metric(_bundle.get<comp::peak_rss>(), ", ").c_str(),
-                        _get_metric(_bundle.get<comp::page_rss>(), ", ").c_str(),
-                        _get_metric(_bundle.get<comp::cpu_clock>(), ", ").c_str(),
-                        _get_metric(_bundle.get<comp::cpu_util>(), "").c_str());
-
     if(_timemory_manager && _timemory_manager != nullptr)
     {
         _timemory_manager->add_metadata([](auto& ar) {
@@ -1012,9 +1041,17 @@ omnitrace_finalize_hidden(void)
                       _push_count, "vs. popped:", _pop_count)
             .c_str());
 
+    debug::close_file();
     config::finalize();
 
-    OMNITRACE_VERBOSE_F(0, "Finalized\n");
+    _bundle.stop();
+    OMNITRACE_VERBOSE_F(0, "Finalized%s\n", _bundle.as_string(": ").c_str());
+
+    tim::signals::enable_signal_detection(
+        { tim::signals::sys_signal::SegFault, tim::signals::sys_signal::Stop },
+        [](int) {});
+
+    std::quick_exit(EXIT_SUCCESS);
 }
 
 //======================================================================================//
