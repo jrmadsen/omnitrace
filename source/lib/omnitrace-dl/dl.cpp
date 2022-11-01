@@ -518,7 +518,9 @@ bool _omnitrace_dl_fini = (std::atexit([]() {
     {                                                                                    \
         fflush(stderr);                                                                  \
         OMNITRACE_COMMON_LIBRARY_LOG_START                                               \
-        fprintf(stderr, "[omnitrace][" OMNITRACE_COMMON_LIBRARY_NAME "] " __VA_ARGS__);  \
+        fprintf(stderr, "[omnitrace][" OMNITRACE_COMMON_LIBRARY_NAME "][%i] ",           \
+                getpid());                                                               \
+        fprintf(stderr, __VA_ARGS__);                                                    \
         OMNITRACE_COMMON_LIBRARY_LOG_END                                                 \
         fflush(stderr);                                                                  \
     }
@@ -956,6 +958,7 @@ bool
 omnitrace_preload()
 {
     auto _preload = get_omnitrace_preload() && get_env("OMNITRACE_ENABLED", true);
+    auto _use_mpi = get_env("OMNITRACE_USE_MPI", get_env("OMNITRACE_USE_MPIP", true));
 
     static bool _once = false;
     if(_once) return _preload;
@@ -963,14 +966,9 @@ omnitrace_preload()
 
     if(_preload)
     {
-        // reset_omnitrace_preload();
+        reset_omnitrace_preload();
         omnitrace_preinit_library();
-        OMNITRACE_DL_LOG(1, "[%s] invoking %s(%s)\n", __FUNCTION__, "omnitrace_init",
-                         ::omnitrace::join(::omnitrace::QuoteStrings{}, ", ", "sampling",
-                                           false, "main")
-                             .c_str());
-        omnitrace_init("sampling", false, "omnitrace");
-        omnitrace_init_tooling();
+        omnitrace_set_mpi(_use_mpi, false);
     }
 
     return _preload;
