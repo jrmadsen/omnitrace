@@ -68,7 +68,8 @@ auto
 get_config()
 {
     static auto _once = (configure_settings(), true);
-    return settings::shared_instance();
+    static auto _v    = settings::shared_instance();
+    return _v;
     (void) _once;
 }
 
@@ -197,19 +198,17 @@ finalize()
 bool
 settings_are_configured()
 {
-    volatile bool _v = _settings_are_configured();
-    return _v;
+    return _settings_are_configured();
 }
 
 void
 configure_settings(bool _init)
 {
-    volatile bool _v = _settings_are_configured();
-    if(_v) return;
-
     static bool _once = false;
     if(_once) return;
     _once = true;
+
+    if(settings_are_configured()) return;
 
     if(get_is_continuous_integration() && get_state() < State::Init)
     {
@@ -827,11 +826,6 @@ configure_settings(bool _init)
 
     settings::suppress_parsing()  = true;
     settings::use_output_suffix() = _config->get<bool>("OMNITRACE_USE_PID");
-    if(settings::use_output_suffix())
-        settings::default_process_suffix() = process::get_id();
-#if !defined(TIMEMORY_USE_MPI) && defined(TIMEMORY_USE_MPI_HEADERS)
-    if(tim::dmp::is_initialized()) settings::default_process_suffix() = tim::dmp::rank();
-#endif
 
     auto _dl_verbose = _config->find("OMNITRACE_DL_VERBOSE");
     if(_dl_verbose->second->get_config_updated())
@@ -965,7 +959,6 @@ omnitrace_exit_action(int nsig)
     OMNITRACE_BASIC_PRINT("Finalizing afer signal %i :: %s\n", nsig,
                           signal_settings::str(static_cast<sys_signal>(nsig)).c_str());
     if(get_state() == State::Active) omnitrace_finalize();
-    kill(process::get_id(), nsig);
 }
 
 void
@@ -1758,9 +1751,11 @@ get_perfetto_output_filename()
         _ext = _val.substr(_pos_ext + 1);
         _val = _val.substr(0, _pos_ext);
     }
-    _val = settings::compose_output_filename(_val, _ext, settings::use_output_suffix(),
-                                             settings::default_process_suffix(), false,
-                                             _dir);
+
+    auto _cfg = settings::compose_filename_config{ settings::use_output_suffix(),
+                                                   settings::default_process_suffix(),
+                                                   false, _dir };
+    _val      = settings::compose_output_filename(_val, _ext, _cfg);
     if(!_val.empty() && _val.at(0) != '/')
         return settings::format(JOIN('/', "%env{PWD}%", _val), get_config()->get_tag());
     return _val;
@@ -2063,13 +2058,19 @@ State
 set_state(State _n)
 {
     auto _o = get_state();
+    // ignore if state is same
+    if(_o == _n) return _n;
+    // do not revert state
+    if(_o >= State::Finalized) return _o;
     OMNITRACE_CONDITIONAL_PRINT_F(get_debug_init(), "Setting state :: %s -> %s\n",
                                   std::to_string(_o).c_str(), std::to_string(_n).c_str());
     // state should always be increased, not decreased
     OMNITRACE_CI_BASIC_THROW(_n < _o,
                              "State is being assigned to a lesser value :: %s -> %s",
                              std::to_string(_o).c_str(), std::to_string(_n).c_str());
-    get_state() = _n;
+    // only apply state if promotion
+    get_state() = (_n > _o) ? _n : _o;
+    // return last state
     return _o;
 }
 }  // namespace omnitrace
