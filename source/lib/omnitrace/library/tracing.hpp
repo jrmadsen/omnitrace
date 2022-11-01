@@ -111,7 +111,7 @@ inline void
 thread_init()
 {
     static thread_local auto _dtor = scope::destructor{ []() {
-        if(get_state() != State::Finalized)
+        if(get_state() < State::Finalized)
         {
             if(get_use_sampling()) sampling::shutdown();
             auto& _thr_bundle = thread_data<thread_bundle_t>::instance();
