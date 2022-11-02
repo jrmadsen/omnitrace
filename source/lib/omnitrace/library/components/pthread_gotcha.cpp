@@ -27,7 +27,6 @@
 #include "library/config.hpp"
 #include "library/debug.hpp"
 #include "library/runtime.hpp"
-#include "library/sampling.hpp"
 #include "library/thread_data.hpp"
 #include "library/utility.hpp"
 

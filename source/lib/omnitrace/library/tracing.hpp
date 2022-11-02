@@ -29,7 +29,6 @@
 #include "library/defines.hpp"
 #include "library/perfetto.hpp"
 #include "library/runtime.hpp"
-#include "library/sampling.hpp"
 #include "library/timemory.hpp"
 #include "library/utility.hpp"
 
@@ -39,6 +38,15 @@
 
 namespace omnitrace
 {
+namespace sampling
+{
+std::set<int>
+setup();
+
+std::set<int>
+shutdown();
+}  // namespace sampling
+
 namespace tracing
 {
 using interval_data_instances = thread_data<std::vector<bool>>;

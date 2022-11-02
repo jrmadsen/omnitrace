@@ -26,7 +26,6 @@
 #include "library/critical_trace.hpp"
 #include "library/debug.hpp"
 #include "library/runtime.hpp"
-#include "library/sampling.hpp"
 #include "library/thread_info.hpp"
 #include "library/utility.hpp"
 
