@@ -110,17 +110,30 @@ include(GNUInstallDirs) # install directories
 include(MacroUtilities) # various functions and macros
 
 if(CI_BUILD)
+    if(OMNITRACE_BUILD_HIDDEN_VISIBILITY)
+        set(_visibility "internal")
+        unset(OMNITRACE_BUILD_HIDDEN_VISIBILTY CACHE)
+    else()
+        set(_visibility "default")
+    endif()
     omnitrace_add_option(OMNITRACE_BUILD_CI "Enable internal asserts, etc." ON ADVANCED
                          NO_FEATURE)
     omnitrace_add_option(OMNITRACE_BUILD_TESTING "Enable building the testing suite" ON
                          ADVANCED)
     omnitrace_add_option(OMNITRACE_BUILD_DEBUG
                          "Enable building with extensive debug symbols" OFF ADVANCED)
-    omnitrace_add_option(
-        OMNITRACE_BUILD_HIDDEN_VISIBILITY
-        "Build with hidden visibility (disable for Debug builds)" OFF ADVANCED)
+    omnitrace_add_cache_option(
+        OMNITRACE_BUILD_VISIBILITY "Build symbol visibility (disable for Debug builds)"
+        STRING "${_visibility}" ADVANCED)
     omnitrace_add_option(OMNITRACE_STRIP_LIBRARIES "Strip the libraries" OFF ADVANCED)
 else()
+    if(OMNITRACE_BUILD_HIDDEN_VISIBILITY)
+        set(_visibility "internal")
+        unset(OMNITRACE_BUILD_HIDDEN_VISIBILTY CACHE)
+    else()
+        set(_visibility "default")
+    endif()
+
     omnitrace_add_option(OMNITRACE_BUILD_CI "Enable internal asserts, etc." OFF ADVANCED
                          NO_FEATURE)
     omnitrace_add_option(OMNITRACE_BUILD_EXAMPLES "Enable building the examples" OFF
@@ -129,11 +142,22 @@ else()
                          ADVANCED)
     omnitrace_add_option(OMNITRACE_BUILD_DEBUG
                          "Enable building with extensive debug symbols" OFF ADVANCED)
-    omnitrace_add_option(
-        OMNITRACE_BUILD_HIDDEN_VISIBILITY
-        "Build with hidden visibility (disable for Debug builds)" ON ADVANCED)
+    omnitrace_add_cache_option(
+        OMNITRACE_BUILD_VISIBILITY "Build symbol visibility (disable for Debug builds)"
+        STRING "${_visibility}" ADVANCED)
     omnitrace_add_option(OMNITRACE_STRIP_LIBRARIES "Strip the libraries"
                          ${_STRIP_LIBRARIES_DEFAULT} ADVANCED)
+endif()
+
+set(OMNITRACE_BUILD_VISIBILITY_TYPES "default" "hidden" "protected" "internal")
+set_property(CACHE OMNITRACE_BUILD_VISIBILITY
+             PROPERTY STRINGS "${OMNITRACE_BUILD_VISIBILITY_TYPES}")
+
+if(NOT OMNITRACE_BUILD_VISIBILITY IN_LIST OMNITRACE_BUILD_VISIBILITY_TYPES)
+    omnitrace_message(
+        FATAL_ERROR
+        "OMNITRACE_BUILD_VISIBILITY invalid: ${OMNITRACE_BUILD_VISIBILITY}. Choices: ${OMNITRACE_BUILD_VISIBILITY_TYPES}"
+        )
 endif()
 
 include(Compilers) # compiler identification
@@ -300,10 +324,12 @@ include(Packages) # finds third-party libraries
 omnitrace_activate_clang_tidy()
 
 # custom visibility settings
-if(OMNITRACE_BUILD_HIDDEN_VISIBILITY)
-    set(CMAKE_C_VISIBILITY_PRESET "internal")
-    set(CMAKE_CXX_VISIBILITY_PRESET "internal")
-    set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+if(OMNITRACE_BUILD_VISIBILITY)
+    set(CMAKE_C_VISIBILITY_PRESET "${OMNITRACE_BUILD_VISIBILITY}")
+    set(CMAKE_CXX_VISIBILITY_PRESET "${OMNITRACE_BUILD_VISIBILITY}")
+    if(NOT "${OMNITRACE_BUILD_VISIBILITY}" MATCHES "default")
+        set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+    endif()
 endif()
 
 if(OMNITRACE_BUILD_TESTING OR "$ENV{OMNITRACE_CI}" MATCHES "[1-9]+|ON|on|y|yes")

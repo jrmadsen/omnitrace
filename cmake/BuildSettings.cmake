@@ -248,14 +248,11 @@ endif()
 # ----------------------------------------------------------------------------------------#
 # visibility build flags
 #
-omnitrace_add_interface_library(omnitrace-default-visibility
-                                "Adds -fvisibility=default compiler flag")
-omnitrace_add_interface_library(omnitrace-hidden-visibility
-                                "Adds -fvisibility=hidden compiler flag")
-
-add_target_flag_if_avail(omnitrace-default-visibility "-fvisibility=default")
-add_target_flag_if_avail(omnitrace-hidden-visibility "-fvisibility=hidden"
-                         "-fvisibility-inlines-hidden")
+foreach(_TYPE "default" "hidden" "protected" "internal")
+    omnitrace_add_interface_library(omnitrace-${_TYPE}-visibility
+                                    "Adds -fvisibility=${_TYPE} compiler flag")
+    add_target_flag_if_avail(omnitrace-${_TYPE}-visibility "-fvisibility=${_TYPE}")
+endforeach()
 
 # ----------------------------------------------------------------------------------------#
 # developer build flags

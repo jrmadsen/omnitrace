@@ -14,7 +14,7 @@
 : ${LIBSTDCXX:="ON"}
 : ${MAX_THREADS:=2048}
 : ${PERFETTO_TOOLS:="ON"}
-: ${HIDDEN_VIZ:="ON"}
+: ${HIDDEN_VIZ:="internal"}
 : ${PYTHON_VERSIONS:="6 7 8 9 10 11"}
 : ${GENERATORS:="STGZ DEB RPM"}
 : ${MPI_IMPL:="openmpi"}
@@ -63,7 +63,7 @@ usage()
     print_default_option perfetto-tools "[on|off]" "Install perfetto tools" "${PERFETTO_TOOLS}"
     print_default_option static-libgcc "[on|off]" "Build with static libgcc" "${LIBGCC}"
     print_default_option static-libstdcxx "[on|off]" "Build with static libstdc++" "${LIBSTDCXX}"
-    print_default_option hidden-visibility "[on|off]" "Build with hidden visibility" "${HIDDEN_VIZ}"
+    print_default_option visibility "[default|hidden|protected|internal]" "Build symbol visibility" "${HIDDEN_VIZ}"
     print_default_option max-threads "N" "Max number of threads supported" "${MAX_THREADS}"
     print_default_option parallel "N" "Number of parallel build jobs" "${NJOBS}"
     print_default_option generators "[STGZ][DEB][RPM][+others]" "CPack generators" "${GENERATORS}"
@@ -161,8 +161,8 @@ do
             shift
             reset-last
             ;;
-        --hidden-visibility)
-            HIDDEN_VIZ=$(toupper ${1})
+        --visibility)
+            HIDDEN_VIZ=$(tolower ${1})
             shift
             reset-last
             ;;
@@ -197,7 +197,7 @@ if [ ${NJOBS} -gt ${NPROC} ]; then NJOBS=${NPROC}; fi
 
 CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=OFF -DCPACK_GENERATOR=STGZ"
 OMNITRACE_GENERAL_ARGS="-DOMNITRACE_CPACK_SYSTEM_NAME=${DISTRO} -DOMNITRACE_ROCM_VERSION=${ROCM_VERSION} -DOMNITRACE_MAX_THREADS=${MAX_THREADS} -DOMNITRACE_STRIP_LIBRARIES=${STRIP} -DOMNITRACE_INSTALL_PERFETTO_TOOLS=${PERFETTO_TOOLS}"
-OMNITRACE_BUILD_ARGS="-DOMNITRACE_BUILD_TESTING=OFF -DOMNITRACE_BUILD_EXAMPLES=OFF -DOMNITRACE_BUILD_PAPI=ON -DOMNITRACE_BUILD_LTO=${LTO} -DOMNITRACE_BUILD_HIDDEN_VISIBILITY=${HIDDEN_VIZ} -DOMNITRACE_BUILD_STATIC_LIBGCC=${LIBGCC} -DOMNITRACE_BUILD_STATIC_LIBSTDCXX=${LIBSTDCXX}"
+OMNITRACE_BUILD_ARGS="-DOMNITRACE_BUILD_TESTING=OFF -DOMNITRACE_BUILD_EXAMPLES=OFF -DOMNITRACE_BUILD_PAPI=ON -DOMNITRACE_BUILD_LTO=${LTO} -DOMNITRACE_BUILD_VISIBILITY=${HIDDEN_VIZ} -DOMNITRACE_BUILD_STATIC_LIBGCC=${LIBGCC} -DOMNITRACE_BUILD_STATIC_LIBSTDCXX=${LIBSTDCXX}"
 OMNITRACE_USE_ARGS="-DOMNITRACE_USE_MPI_HEADERS=ON -DOMNITRACE_USE_OMPT=ON -DOMNITRACE_USE_PAPI=ON"
 TIMEMORY_ARGS="-DTIMEMORY_USE_LIBUNWIND=ON -DTIMEMORY_BUILD_LIBUNWIND=ON -DTIMEMORY_BUILD_PORTABLE=ON"
 DYNINST_ARGS="-DOMNITRACE_BUILD_DYNINST=ON -DDYNINST_USE_OpenMP=ON $(echo -DDYNINST_BUILD_{TBB,BOOST,ELFUTILS,LIBIBERTY}=ON) -DDYNINST_BOOST_DOWNLOAD_VERSION=${BOOST_VERSION}"
