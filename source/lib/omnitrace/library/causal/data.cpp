@@ -32,6 +32,7 @@
 #include "core/debug.hpp"
 #include "core/state.hpp"
 #include "core/utility.hpp"
+#include "dl/dl.hpp"
 #include "library/causal/delay.hpp"
 #include "library/causal/experiment.hpp"
 #include "library/causal/fwd.hpp"
@@ -320,6 +321,8 @@ compute_eligible_lines_impl()
         _scoped.sort();
     }
 
+    auto _instr_mode = get_env("OMNITRACE_INSTRUMENT_MODE", dl::InstrumentMode::None);
+
     auto& _eligible_ar = get_eligible_address_ranges();
     for(const auto& litr : _scoped_info)
     {
@@ -331,6 +334,15 @@ compute_eligible_lines_impl()
         for(auto ditr : litr.ranges)
         {
             _eligible_ar += ditr;
+        }
+
+        if(_instr_mode == dl::InstrumentMode::BinaryRewrite)
+        {
+            for(const auto& ditr : litr.mappings)
+            {
+                _eligible_ar +=
+                    address_range_t{ ditr.load_address, ditr.last_address + 1 };
+            }
         }
     }
 
@@ -445,7 +457,7 @@ compute_eligible_lines()
         auto _cfg         = settings::compose_filename_config{};
         _cfg.subdirectory = "causal/binary-info";
         _cfg.use_suffix   = config::get_use_pid();
-        save_line_info(_cfg, config::get_verbose());
+        // save_line_info(_cfg, config::get_verbose());
     });
 }
 
@@ -810,6 +822,52 @@ sample_selection(size_t _nitr, size_t _wait_ns)
 
             // lookup the PC line info at either the address or the symbol address
             auto linfo = get_line_info(_lookup_addr, false);
+
+            if(linfo.empty())
+            {
+                auto _ipinfo = binary::lookup_ipaddr_entry<true>(_addr);
+                if(_ipinfo)
+                {
+                    auto _sym = binary::symbol{ *_ipinfo };
+                    /*if(_sym.dyninst_func)
+                    {
+                        for(auto& itr : get_cached_binary_info().first)
+                        {
+                            for(const auto& mitr : itr.mappings)
+                            {
+                                if(address_range_t{ mitr.load_address,
+                                                    mitr.last_address + 1 }
+                                       .contains(_addr))
+                                {
+                                    for(const auto& sitr : itr.symbols)
+                                    {
+                                        if(_sym.func
+                                    }
+                                }
+                            }
+                        }
+                    }*/
+
+                    if(_sym(get_filters()))
+                    {
+                        for(auto& itr : get_cached_binary_info().first)
+                        {
+                            for(const auto& mitr : itr.mappings)
+                            {
+                                if(address_range_t{ mitr.load_address,
+                                                    mitr.last_address + 1 }
+                                       .contains(_addr))
+                                {
+                                    itr.symbols.emplace_back(_sym);
+                                    throw std::runtime_error(JOIN(
+                                        "", mitr.pathname, " :: ", _sym.to_string()));
+                                }
+                            }
+                        }
+                        linfo.emplace_back(std::move(_sym));
+                    }
+                }
+            }
 
             // unlikely this will be empty but just in case
             if(linfo.empty()) continue;

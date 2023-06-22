@@ -52,6 +52,7 @@ struct symbol : private tim::unwind::bfd_file::symbol
 
     symbol() = default;
     symbol(const base_type& _v);
+    symbol(const tim::unwind::processed_entry&);
 
     ~symbol()                 = default;
     symbol(const symbol&)     = default;
@@ -71,6 +72,7 @@ struct symbol : private tim::unwind::bfd_file::symbol
     size_t        read_dwarf_breakpoints(const std::vector<uintptr_t>&);
     address_range ipaddr() const { return address + load_address; }
     symbol        clone() const;
+    std::string   to_string() const;
 
     template <typename Tp = std::deque<symbol>>
     Tp get_inline_symbols(const std::vector<scope_filter>&) const;
@@ -85,6 +87,7 @@ struct symbol : private tim::unwind::bfd_file::symbol
     using base_type::section;
     using base_type::visibility;
 
+    bool                        dyninst_func = false;
     unsigned int                line         = 0;
     uintptr_t                   load_address = 0;
     address_range               address      = {};

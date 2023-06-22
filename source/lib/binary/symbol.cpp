@@ -82,9 +82,25 @@ read_inliner_info(bfd* _inp)
 
 symbol::symbol(const base_type& _v)
 : base_type{ _v }
+, dyninst_func{ std::regex_match(base_type::name.data(), std::regex{ "(.*)_dyninst$" }) }
 , address{ _v.address, _v.address + _v.symsize + 1 }
 , func{ std::string{ base_type::name } }
-{}
+{
+    if(dyninst_func) func = std::regex_replace(func, std::regex{ "(.*)_dyninst$" }, "$1");
+}
+
+symbol::symbol(const tim::unwind::processed_entry& _v)
+: base_type{}
+, dyninst_func{ std::regex_match(_v.name, std::regex{ "(.*)_dyninst$" }) }
+, line{ _v.lineno }
+, load_address{ _v.address - _v.offset }
+, address{ _v.line_address }
+, func{ _v.name }
+, file{ _v.location }
+{
+    if(dyninst_func) func = std::regex_replace(func, std::regex{ "(.*)_dyninst$" }, "$1");
+    base_type::name = func;
+}
 
 bool
 symbol::operator==(const symbol& _rhs) const
@@ -114,8 +130,7 @@ bool
 symbol::operator()(const std::vector<scope_filter>& _filters) const
 {
     using sf = scope_filter;
-
-    // apply filters to the main symbol
+    // return result of applying filters to the primary symbol
     return (sf::satisfies_filter(_filters, sf::FUNCTION_FILTER, demangle(func)) &&
             (sf::satisfies_filter(_filters, sf::SOURCE_FILTER, file) ||
              sf::satisfies_filter(_filters, sf::SOURCE_FILTER, join(':', file, line))));
@@ -263,6 +278,7 @@ symbol
 symbol::clone() const
 {
     auto _sym         = symbol{ static_cast<base_type>(*this) };
+    _sym.dyninst_func = dyninst_func;
     _sym.line         = line;
     _sym.load_address = load_address;
     _sym.address      = address;
@@ -270,6 +286,15 @@ symbol::clone() const
     _sym.file         = file;
 
     return _sym;
+}
+
+std::string
+symbol::to_string() const
+{
+    auto _ss = std::stringstream{};
+    _ss << "[" << as_hex(ipaddr()) << "] " << func << " @ " << file << ":" << line << " ("
+        << as_hex(load_address) << " + " << as_hex(address) << ")";
+    return _ss.str();
 }
 
 template <typename Tp>
