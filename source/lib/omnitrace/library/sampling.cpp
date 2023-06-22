@@ -1109,6 +1109,10 @@ post_process_overflow_data(int64_t                       _tid, const bundle_t*,
         }
     }
 
+    _results.erase(std::remove_if(_results.begin(), _results.end(),
+                                  [](const auto& _v) { return _v.m_end < _v.m_beg; }),
+                   _results.end());
+
     std::sort(_results.begin(), _results.end(),
               [](const auto& _lhs, const auto& _rhs) { return _lhs.m_beg < _rhs.m_beg; });
 
@@ -1144,13 +1148,13 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
 
     if(!_thread_info) return;
 
-    uint64_t _beg_ns = _thread_info->get_start();
-    uint64_t _end_ns = _thread_info->get_stop();
+    // uint64_t _beg_ns = _thread_info->get_start();
+    // uint64_t _end_ns = _thread_info->get_stop();
 
     auto _overflow_event =
         get_setting_value<std::string>("OMNITRACE_SAMPLING_OVERFLOW_EVENT").value_or("");
 
-    if(!_overflow_event.empty())
+    if(!_overflow_event.empty() && !_overflow_data.empty())
     {
         const auto _overflow_prefix = std::string_view{ "PERF_COUNT_" };
         const auto _overflow_pos    = _overflow_event.find(_overflow_prefix);
@@ -1158,9 +1162,9 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
             _overflow_event =
                 _overflow_event.substr(_overflow_pos + _overflow_prefix.length());
 
-        const auto* _main_name =
-            static_strings.emplace(join(" ", _overflow_event, "samples [omnitrace]"))
-                .first->c_str();
+        // const auto* _main_name =
+        //    static_strings.emplace(join(" ", _overflow_event, "samples [omnitrace]"))
+        //        .first->c_str();
 
         auto _track = tracing::get_perfetto_track(
             category::overflow_sampling{},
@@ -1169,7 +1173,7 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
             },
             _thread_info->index_data->sequent_value,
             _thread_info->index_data->system_value);
-
+        /*
         tracing::push_perfetto_track(category::overflow_sampling{}, _main_name, _track,
                                      _beg_ns, [&](::perfetto::EventContext ctx) {
                                          if(config::get_perfetto_annotations())
@@ -1178,7 +1182,7 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
                                                  ctx, "begin_ns", _beg_ns);
                                          }
                                      });
-
+        */
         for(const auto& itr : _overflow_data)
         {
             auto _beg = itr.m_beg;
@@ -1188,13 +1192,22 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
 
             for(const auto& iitr : itr.m_stack)
             {
+                auto        _func          = demangle(iitr.name);
+                bool        _use_file_line = !iitr.location.empty() && iitr.lineno > 0;
                 const auto* _name =
-                    static_strings.emplace(demangle(iitr.name)).first->c_str();
+                    static_strings
+                        .emplace((_use_file_line)
+                                     ? JOIN(':', filepath::basename(iitr.location),
+                                            iitr.lineno)
+                                     : _func)
+                        .first->c_str();
                 tracing::push_perfetto_track(
                     category::overflow_sampling{}, _name, _track, _beg,
                     [&](::perfetto::EventContext ctx) {
                         if(config::get_perfetto_annotations())
                         {
+                            if(_use_file_line)
+                                tracing::add_perfetto_annotation(ctx, "func", _func);
                             tracing::add_perfetto_annotation(ctx, "file", iitr.location);
                             tracing::add_perfetto_annotation(ctx, "pc",
                                                              as_hex(iitr.address));
@@ -1220,7 +1233,7 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
                                             _end);
             }
         }
-
+        /*
         tracing::pop_perfetto_track(category::overflow_sampling{}, _main_name, _track,
                                     _end_ns, [&](::perfetto::EventContext ctx) {
                                         if(config::get_perfetto_annotations())
@@ -1229,6 +1242,7 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
                                                 ctx, "end_ns", _end_ns);
                                         }
                                     });
+        */
     }
 
     if(!_timer_data.empty())
@@ -1240,7 +1254,7 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
             },
             _thread_info->index_data->sequent_value,
             _thread_info->index_data->system_value);
-
+        /*
         tracing::push_perfetto_track(category::timer_sampling{}, "samples [omnitrace]",
                                      _track, _beg_ns, [&](::perfetto::EventContext ctx) {
                                          if(config::get_perfetto_annotations())
@@ -1249,7 +1263,7 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
                                                  ctx, "begin_ns", _beg_ns);
                                          }
                                      });
-
+        */
         auto _labels = backtrace_metrics::get_hw_counter_labels(_tid);
         for(const auto& itr : _timer_data)
         {
@@ -1297,8 +1311,16 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
                     size_t _n = 0;
                     for(const auto& litr : _lines)
                     {
+                        auto _func          = demangle(litr.name);
+                        bool _use_file_line = !litr.location.empty() && litr.line > 0;
                         const auto* _name =
-                            static_strings.emplace(demangle(litr.name)).first->c_str();
+                            static_strings
+                                .emplace((_use_file_line)
+                                             ? JOIN(':',
+                                                    filepath::basename(litr.location),
+                                                    litr.line)
+                                             : _func)
+                                .first->c_str();
                         auto _info = JOIN(':', litr.location, litr.line);
                         tracing::push_perfetto_track(
                             category::timer_sampling{}, _name, _track, _beg,
@@ -1307,6 +1329,9 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
                                 {
                                     _common_annotate(ctx, (_n == 0 && _ncur == 0) ||
                                                               (_n + 1 == _lines.size()));
+                                    if(_use_file_line)
+                                        tracing::add_perfetto_annotation(ctx, "func",
+                                                                         _func);
                                     tracing::add_perfetto_annotation(ctx, "file",
                                                                      iitr.location);
                                     tracing::add_perfetto_annotation(ctx, "lineinfo",
@@ -1321,13 +1346,23 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
                 }
                 else
                 {
-                    const auto* _name = static_strings.emplace(iitr.name).first->c_str();
+                    auto _func          = demangle(iitr.name);
+                    bool _use_file_line = !iitr.location.empty() && iitr.lineno > 0;
+                    const auto* _name =
+                        static_strings
+                            .emplace((_use_file_line)
+                                         ? JOIN(':', filepath::basename(iitr.location),
+                                                iitr.lineno)
+                                         : _func)
+                            .first->c_str();
                     tracing::push_perfetto_track(
                         category::timer_sampling{}, _name, _track, _beg,
                         [&](::perfetto::EventContext ctx) {
                             if(config::get_perfetto_annotations())
                             {
                                 _common_annotate(ctx, true);
+                                if(_use_file_line)
+                                    tracing::add_perfetto_annotation(ctx, "func", _func);
                                 tracing::add_perfetto_annotation(ctx, "file",
                                                                  iitr.location);
                                 tracing::add_perfetto_annotation(ctx, "pc",
@@ -1356,7 +1391,7 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
                 }
             }
         }
-
+        /*
         tracing::pop_perfetto_track(category::timer_sampling{}, "samples [omnitrace]",
                                     _track, _end_ns, [&](::perfetto::EventContext ctx) {
                                         if(config::get_perfetto_annotations())
@@ -1365,6 +1400,7 @@ post_process_perfetto(int64_t _tid, const std::vector<timer_sampling_data>& _tim
                                                 ctx, "end_ns", _end_ns);
                                         }
                                     });
+        */
     }
 }
 
