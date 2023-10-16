@@ -308,7 +308,9 @@ for `foo` via the direct call within `spam`. There will be no entries for `bar` 
 
 ![omnitrace-user-api](source/docs/images/omnitrace-user-api.png)
 
-## Using Perfetto tracing with System Backend
+## Using Perfetto Tracing with Multiple Processes
+
+See documentation on [Perfetto Trace Output for Multiple Prcesses](https://amdresearch.github.io/omnitrace/output#perfetto-trace-for-multiple-processes) for full details.
 
 Perfetto tracing with the system backend supports multiple processes writing to the same
 output file. Thus, it is a useful technique if Omnitrace is built with partial MPI support
@@ -320,12 +322,13 @@ it should be noted that to prevent this option from accidentally overwriting an 
 all the perfetto executables installed by omnitrace are prefixed with `omnitrace-perfetto-`, except for the `perfetto`
 executable, which is just renamed `omnitrace-perfetto`.
 
+> ***NOTE: Omnitrace installers include `omnitrace-perfetto-traced` and `omnitrace-perfetto`***
+
 Enable `traced` and `perfetto` in the background:
 
 ```shell
-pkill traced
 traced --background
-perfetto --out ./omnitrace-perfetto.proto --txt -c ${OMNITRACE_ROOT}/share/omnitrace.cfg --background
+perfetto --out ./omnitrace-perfetto.proto --txt -c ${OMNITRACE_ROOT}/share/omnitrace/perfetto.cfg --background
 ```
 
 > ***NOTE: if the perfetto tools were installed by omnitrace, replace `traced` with `omnitrace-perfetto-traced` and***
@@ -334,15 +337,5 @@ perfetto --out ./omnitrace-perfetto.proto --txt -c ${OMNITRACE_ROOT}/share/omnit
 Configure omnitrace to use the perfetto system backend via the `--perfetto-backend` option of `omnitrace-run`:
 
 ```shell
-# enable sampling on the uninstrumented binary
 omnitrace-run --sample --trace --perfetto-backend=system -- ./myapp
-# trace the instrument the binary
-omnitrace-instrument -o ./myapp.inst -- ./myapp
-omnitrace-run --trace --perfetto-backend=system -- ./myapp.inst
-```
-
-or via the `--env` option of `omnitrace-instrument` + runtime instrumentation:
-
-```shell
-omnitrace-instrument --env OMNITRACE_PERFETTO_BACKEND=system -- ./myapp
 ```
