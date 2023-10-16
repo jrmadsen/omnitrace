@@ -26,6 +26,8 @@
 #include "perfetto_fwd.hpp"
 #include "utility.hpp"
 
+#include <timemory/utility/popen.hpp>
+
 namespace omnitrace
 {
 namespace perfetto
@@ -270,6 +272,94 @@ std::unique_ptr<::perfetto::TracingSession>&
 get_perfetto_session(pid_t _pid)
 {
     return ::omnitrace::perfetto::get_session(_pid);
+}
+
+std::pair<pid_t, pid_t>
+launch_perfetto_system_daemons(std::string_view bindir, std::vector<char*> envp)
+{
+    constexpr auto pid_min = std::numeric_limits<pid_t>::min();
+    auto           pids    = std::pair<pid_t, pid_t>{ pid_min, pid_min };
+
+    if(!envp.empty() && envp.back() != nullptr) envp.emplace_back(nullptr);
+
+    auto tmpdir              = get_env<std::string>("TMPDIR", "/tmp");
+    auto perfetto_traced_exe = JOIN('/', bindir, "omnitrace-perfetto-traced");
+    auto perfetto_exe        = JOIN('/', bindir, "omnitrace-perfetto");
+    auto perfetto_cfg        = JOIN('/', bindir, "../share/omnitrace/perfetto.cfg");
+
+    if(!filepath::exists(perfetto_traced_exe) || !filepath::exists(perfetto_exe))
+        return pids;
+
+    auto socket_exists = [](const std::string& _sname) {
+        struct stat _buffer;
+        if(stat(_sname.c_str(), &_buffer) == 0) return (S_ISSOCK(_buffer.st_mode) != 0);
+        return false;
+    };
+
+    if(!socket_exists(JOIN('/', tmpdir, "perfetto-producer")) &&
+       !socket_exists(JOIN('/', tmpdir, "perfetto-consumer")))
+    {
+        auto args = std::vector<char*>{};
+        args.emplace_back(strdup("--background"));
+        args.emplace_back(nullptr);
+        auto proc =
+            tim::popen::popen(perfetto_traced_exe.c_str(), args.data(), envp.data());
+        auto data = tim::popen::read_fork(
+            proc, "\n\t", "\n\t", [](std::string_view) { return true; }, 10);
+        auto proc_err = tim::popen::pclose(proc);
+        for(auto& itr : args)
+            ::free(itr);
+        OMNITRACE_PREFER(proc_err == 0)
+            << "'" << perfetto_traced_exe << " --background' exited with " << proc_err;
+        if(!data.empty())
+        {
+            auto pid_v = std::stringstream{};
+            pid_v << data.front();
+            pid_v >> pids.first;
+        }
+    }
+
+    if(!socket_exists(JOIN('/', tmpdir, "perfetto-producer")) &&
+       !socket_exists(JOIN('/', tmpdir, "perfetto-consumer")))
+        return pids;
+
+    auto perfetto_output_file = config::get_perfetto_output_filename();
+    auto args                 = std::vector<char*>{};
+
+    args.emplace_back(strdup("--out"));
+    args.emplace_back(strdup(perfetto_output_file.c_str()));
+    args.emplace_back(strdup("--txt"));
+    args.emplace_back(strdup("--c"));
+    args.emplace_back(strdup(perfetto_cfg.c_str()));
+    args.emplace_back(strdup("--background"));
+
+    auto proc = tim::popen::popen(perfetto_exe.c_str(), args.data(), envp.data());
+    auto data = tim::popen::read_fork(
+        proc, "\n\t", "\n\t", [](std::string_view) { return true; }, 10);
+    auto proc_err = tim::popen::pclose(proc);
+
+    auto get_perfetto_exe_cmd = [&perfetto_exe, &args]() {
+        auto perfetto_exe_cmd = std::stringstream{};
+        perfetto_exe_cmd << perfetto_exe;
+        for(const auto& itr : args)
+            perfetto_exe_cmd << " " << itr;
+        return perfetto_exe_cmd.str();
+    };
+
+    OMNITRACE_PREFER(proc_err == 0)
+        << "'" << get_perfetto_exe_cmd() << "' exited with " << proc_err;
+
+    for(auto& itr : args)
+        ::free(itr);
+
+    if(!data.empty())
+    {
+        auto pid_v = std::stringstream{};
+        pid_v << data.front();
+        pid_v >> pids.second;
+    }
+
+    return pids;
 }
 }  // namespace omnitrace
 

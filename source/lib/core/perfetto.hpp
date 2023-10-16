@@ -39,6 +39,8 @@ PERFETTO_DEFINE_CATEGORIES(OMNITRACE_PERFETTO_CATEGORIES);
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
+#include <sys/types.h>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -47,6 +49,9 @@ namespace omnitrace
 {
 std::unique_ptr<::perfetto::TracingSession>& get_perfetto_session(
     pid_t = process::get_id());
+
+std::pair<pid_t, pid_t>
+launch_perfetto_system_daemon(std::string_view bindir, std::vector<char*> envp = {});
 
 template <typename Tp>
 struct perfetto_counter_track
