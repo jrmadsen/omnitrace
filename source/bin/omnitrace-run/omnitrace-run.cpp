@@ -61,9 +61,10 @@ main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    auto _parse_data = parser_data_t{};
-    auto _fork_exec  = false;
-    parse_args(argc, argv, _parse_data, _fork_exec);
+    auto _parse_data  = parser_data_t{};
+    auto _daemon_pids = std::vector<pid_t>{};
+    auto _fork_exec   = false;
+    parse_args(argc, argv, _parse_data, _fork_exec, _daemon_pids);
     prepare_command_for_run(argv[0], _parse_data);
     prepare_environment_for_run(_parse_data);
 
@@ -76,7 +77,7 @@ main(int argc, char** argv)
         _argv.emplace_back(nullptr);
         _envp.emplace_back(nullptr);
 
-        if(_fork_exec)
+        if(_fork_exec || !_daemon_pids.empty())
         {
             auto _main_pid = getpid();
             auto _pid      = fork();
@@ -101,6 +102,11 @@ main(int argc, char** argv)
                         stderr, "omnitrace run in process %i completed. exit code: %i\n",
                         _pid, _ec);
                 }
+
+                // send interrupt signal to the daemon pids
+                for(const auto& itr : _daemon_pids)
+                    kill(itr, SIGINT);
+
                 return _ec;
             }
         }

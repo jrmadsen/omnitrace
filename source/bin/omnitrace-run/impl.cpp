@@ -29,6 +29,8 @@
 #include "common/setup.hpp"
 #include "core/argparse.hpp"
 #include "core/config.hpp"
+#include "core/debug.hpp"
+#include "core/perfetto.hpp"
 #include "core/state.hpp"
 #include "core/timemory.hpp"
 
@@ -236,7 +238,7 @@ print_updated_environment(parser_data_t& _data, std::string_view _prefix)
 
     if(_general.size() + _updates.size() == 0 || _verbose < 0) return;
 
-    std::cerr << std::endl;
+    std::cerr << '\n';
 
     for(auto& itr : _general)
         stream(std::cerr, color::source()) << _prefix << itr << "\n";
@@ -247,10 +249,12 @@ print_updated_environment(parser_data_t& _data, std::string_view _prefix)
 }
 
 parser_data_t&
-parse_args(int argc, char** argv, parser_data_t& _parser_data, bool& _fork_exec)
+parse_args(int argc, char** argv, parser_data_t& _parser_data, bool& _fork_exec,
+           std::vector<pid_t>& _pids)
 {
     get_initial_environment(_parser_data);
 
+    auto exe            = filepath::realpath(argv[0]);
     bool _do_parse_args = false;
     for(int i = 1; i < argc; ++i)
     {
@@ -340,6 +344,62 @@ parse_args(int argc, char** argv, parser_data_t& _parser_data, bool& _fork_exec)
     {
         std::cerr << _cerr.what() << std::endl;
         exit(EXIT_FAILURE);
+    }
+
+    tim::vsettings* perfetto_backend_setting = nullptr;
+    tim::vsettings* output_path_setting      = nullptr;
+    tim::vsettings* output_prefix_setting    = nullptr;
+    tim::vsettings* output_file_setting      = nullptr;
+
+    if(_parser_data.processed_environs.count("perfetto_backend") > 0)
+    {
+        for(const auto& itr : _parser_data.processed_settings)
+        {
+            if(itr->get_name() == "perfetto_backend")
+                perfetto_backend_setting = itr;
+            else if(itr->get_name() == "output_path")
+                output_path_setting = itr;
+            else if(itr->get_name() == "output_prefix")
+                output_prefix_setting = itr;
+            else if(itr->get_name() == "output_file")
+                output_file_setting = itr;
+        }
+    }
+
+    auto patch_setting = [&_parser_data](tim::vsettings* setting_v) {
+        if(!setting_v) return;
+        auto _expected = setting_v->get_env_name() + "=";
+        for(const auto& itr : _parser_data.current)
+        {
+            if(std::string_view{ itr }.find(_expected) == 0)
+            {
+                OMNITRACE_REQUIRE(
+                    setting_v->parse(std::string{ itr }.substr(_expected.length())))
+                    << "failure parsing value '"
+                    << std::string{ itr }.substr(_expected.length()) << "' of "
+                    << setting_v->get_env_name() << " from '" << itr << "'";
+            }
+        }
+    };
+
+    if(perfetto_backend_setting)
+    {
+        patch_setting(perfetto_backend_setting);
+        auto perfetto_backend_setting_v = perfetto_backend_setting->get<std::string>();
+        if(perfetto_backend_setting_v.first &&
+           perfetto_backend_setting_v.second == "system")
+        {
+            _fork_exec = true;
+            patch_setting(output_path_setting);
+            patch_setting(output_prefix_setting);
+            patch_setting(output_file_setting);
+            auto _perfetto_daemon_pids =
+                omnitrace::launch_perfetto_system_daemon(filepath::dirname(exe));
+            if(_perfetto_daemon_pids.second > 0)
+                _pids.emplace_back(_perfetto_daemon_pids.second);
+            if(_perfetto_daemon_pids.first > 0)
+                _pids.emplace_back(_perfetto_daemon_pids.first);
+        }
     }
 
     tim::log::monochrome() = _parser_data.monochrome;
