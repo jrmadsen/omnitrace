@@ -681,7 +681,7 @@ omnitrace_finalize_hidden(void)
     // disable initialization callback
     threading::remove_callback(&ensure_initialization);
 
-    bool _is_child = is_child_process();
+    // bool _is_child = is_child_process();
 
     set_thread_state(ThreadState::Completed);
 
@@ -692,12 +692,12 @@ omnitrace_finalize_hidden(void)
                                 std::to_string(get_state()).c_str());
         return;
     }
-    else if(_is_child)
-    {
-        set_state(State::Finalized);
-        std::quick_exit(EXIT_SUCCESS);
-        return;
-    }
+    // else if(_is_child)
+    // {
+    //     set_state(State::Finalized);
+    //     std::quick_exit(EXIT_SUCCESS);
+    //     return;
+    // }
 
     if(get_verbose() >= 0 || get_debug()) fprintf(stderr, "\n");
     OMNITRACE_VERBOSE_F(0, "finalizing...\n");

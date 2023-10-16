@@ -66,6 +66,13 @@ prefork_setup()
 {
     if(prefork_lock) return;
 
+    OMNITRACE_REQUIRE(!config::get_use_perfetto() ||
+                      config::get_perfetto_backend() != "system")
+        << "If tracing via perfetto is enabled in an application which invokes `fork()`, "
+           "omnitrace must use perfetto with the system backend. See the documentation "
+           "for Omnitrace + Perfetto Output for more information: "
+           "https://amdresearch.github.io/omnitrace/output.html#perfetto-output";
+
     OMNITRACE_SCOPED_THREAD_STATE(ThreadState::Internal);
     OMNITRACE_SCOPED_SAMPLING_ON_CHILD_THREADS(false);
 
@@ -115,14 +122,28 @@ postfork_child()
         << "Error! child process " << process::get_id()
         << " believes it is the root process " << get_root_process_id() << "\n";
 
-    settings::enabled() = false;
-    settings::verbose() = -127;
-    settings::debug()   = false;
-    omnitrace::sampling::shutdown();
-    omnitrace::categories::shutdown();
-    set_thread_state(::omnitrace::ThreadState::Disabled);
+    if(config::get_perfetto_backend() != "system")
+    {
+        settings::enabled() = false;
+        settings::verbose() = -127;
+        settings::debug()   = false;
+        omnitrace::sampling::shutdown();
+        omnitrace::categories::shutdown();
+        set_thread_state(::omnitrace::ThreadState::Disabled);
 
-    omnitrace::get_perfetto_session(process::get_parent_id()).release();
+        omnitrace::get_perfetto_session(process::get_parent_id()).release();
+    }
+    else
+    {
+        if(config::get_use_sampling())
+        {
+            omnitrace::sampling::shutdown();
+            sampling::unblock_samples();
+            omnitrace::sampling::setup();
+        }
+
+        omnitrace::categories::enable_categories(config::get_enabled_categories());
+    }
 
     // register these exit handlers to avoid cleaning up resources
     on_exit(&child_exit, nullptr);
