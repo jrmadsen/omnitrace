@@ -28,6 +28,7 @@
 #include "core/config.hpp"
 #include "core/debug.hpp"
 #include "core/defines.hpp"
+#include "core/otf2.hpp"
 #include "core/perfetto.hpp"
 #include "core/state.hpp"
 #include "core/timemory.hpp"
@@ -651,6 +652,26 @@ mark_perfetto_track(CategoryT, const char*, ::perfetto::Track _track, uint64_t _
 
     TRACE_EVENT_INSTANT(trait::name<CategoryT>::value, _track, _ts,
                         std::forward<Args>(args)...);
+}
+
+template <typename CategoryT, typename... Args>
+inline auto
+push_otf2(CategoryT, std::string_view name, Args&&...)
+{
+    auto* evt_writer = otf2::get_event_writer(threading::get_id());
+    auto  _hash      = tim::hash::get_hash_id(name);
+
+    OTF2_EvtWriter_Enter(evt_writer, nullptr, now(), _hash);
+}
+
+template <typename CategoryT, typename... Args>
+inline auto
+pop_otf2(CategoryT, std::string_view name, Args&&...)
+{
+    auto* evt_writer = otf2::get_event_writer(threading::get_id());
+    auto  _hash      = tim::hash::get_hash_id(name);
+
+    OTF2_EvtWriter_Leave(evt_writer, nullptr, now(), _hash);
 }
 }  // namespace tracing
 }  // namespace omnitrace

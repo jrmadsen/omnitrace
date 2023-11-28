@@ -214,8 +214,8 @@ mpi_gotcha::update()
         OMNITRACE_BASIC_VERBOSE(0, "[pid=%i] MPI rank: %i (%i), MPI size: %i (%i)\n",
                                 process::get_id(), tim::mpi::rank(), _rank,
                                 tim::mpi::size(), _size);
-        last_comm_record      = _rank_data;
-        config::get_use_pid() = true;
+        last_comm_record = _rank_data;
+        config::set_setting_value("OMNITRACE_USE_PID", true);
         return true;
     }
     return false;

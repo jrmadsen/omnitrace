@@ -35,6 +35,7 @@
 #include "core/defines.hpp"
 #include "core/gpu.hpp"
 #include "core/locking.hpp"
+#include "core/otf2.hpp"
 #include "core/perfetto_fwd.hpp"
 #include "core/timemory.hpp"
 #include "core/utility.hpp"
@@ -540,6 +541,13 @@ omnitrace_init_tooling_hidden()
         }
     }
 
+    // OTF2 initialization
+    if(get_use_otf2())
+    {
+        OMNITRACE_VERBOSE_F(1, "Setting up OTF2...\n");
+        otf2::setup();
+    }
+
     if(get_use_ompt())
     {
         OMNITRACE_VERBOSE_F(1, "Setting up OMPT...\n");
@@ -989,6 +997,13 @@ omnitrace_finalize_hidden(void)
     {
         OMNITRACE_VERBOSE_F(1, "Post-processing the code coverage...\n");
         coverage::post_process();
+    }
+
+    if(get_use_otf2())
+    {
+        OMNITRACE_VERBOSE_F(0, "Finalizing otf2...\n");
+        otf2::post_process();
+        otf2::shutdown();
     }
 
     bool _perfetto_output_error = false;
