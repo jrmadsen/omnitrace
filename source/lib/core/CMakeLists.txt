@@ -12,6 +12,7 @@ set(core_sources
     ${CMAKE_CURRENT_LIST_DIR}/exception.cpp
     ${CMAKE_CURRENT_LIST_DIR}/gpu.cpp
     ${CMAKE_CURRENT_LIST_DIR}/mproc.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/otf2.cpp
     ${CMAKE_CURRENT_LIST_DIR}/perf.cpp
     ${CMAKE_CURRENT_LIST_DIR}/perfetto.cpp
     ${CMAKE_CURRENT_LIST_DIR}/state.cpp
@@ -32,6 +33,7 @@ set(core_headers
     ${CMAKE_CURRENT_LIST_DIR}/hip_runtime.hpp
     ${CMAKE_CURRENT_LIST_DIR}/locking.hpp
     ${CMAKE_CURRENT_LIST_DIR}/mproc.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/otf2.hpp
     ${CMAKE_CURRENT_LIST_DIR}/perf.hpp
     ${CMAKE_CURRENT_LIST_DIR}/perfetto.hpp
     ${CMAKE_CURRENT_LIST_DIR}/rccl.hpp

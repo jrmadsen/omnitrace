@@ -185,13 +185,16 @@ get_verbose_env() OMNITRACE_HOT;
 int
 get_verbose() OMNITRACE_HOT;
 
-bool&
+bool
 get_use_perfetto() OMNITRACE_HOT;
 
-bool&
+bool
+get_use_otf2() OMNITRACE_HOT;
+
+bool
 get_use_timemory() OMNITRACE_HOT;
 
-bool&
+bool
 get_use_causal() OMNITRACE_HOT;
 
 bool
@@ -206,16 +209,16 @@ get_use_rocm_smi() OMNITRACE_HOT;
 bool
 get_use_roctx();
 
-bool&
+bool
 get_use_sampling() OMNITRACE_HOT;
 
-bool&
+bool
 get_use_process_sampling() OMNITRACE_HOT;
 
-bool&
+bool
 get_use_pid();
 
-bool&
+bool
 get_use_mpip();
 
 bool
@@ -284,6 +287,9 @@ get_perfetto_output_filename();
 
 bool
 get_perfetto_roctracer_per_stream() OMNITRACE_HOT;
+
+std::pair<std::string, std::string>
+get_otf2_output_filename();
 
 double
 get_trace_delay();

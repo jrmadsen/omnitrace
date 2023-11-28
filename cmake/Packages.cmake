@@ -27,6 +27,7 @@ omnitrace_add_interface_library(omnitrace-bfd "Provides Binary File Descriptor (
 omnitrace_add_interface_library(omnitrace-ptl "Enables PTL support (tasking)")
 omnitrace_add_interface_library(omnitrace-papi "Enable PAPI support")
 omnitrace_add_interface_library(omnitrace-ompt "Enable OMPT support")
+omnitrace_add_interface_library(omnitrace-otf2 "Enable OTF2 support")
 omnitrace_add_interface_library(omnitrace-python "Enables Python support")
 omnitrace_add_interface_library(omnitrace-elfutils "Provides ElfUtils")
 omnitrace_add_interface_library(omnitrace-perfetto "Enables Perfetto support")
@@ -46,6 +47,7 @@ set(OMNITRACE_EXTENSION_LIBRARIES
     omnitrace::omnitrace-mpi
     omnitrace::omnitrace-ptl
     omnitrace::omnitrace-ompt
+    omnitrace::omnitrace-otf2
     omnitrace::omnitrace-papi
     omnitrace::omnitrace-perfetto)
 
@@ -109,6 +111,14 @@ foreach(_LIB dl rt)
         target_link_libraries(omnitrace-threading INTERFACE ${${_LIB}_LIBRARY})
     endif()
 endforeach()
+
+# ----------------------------------------------------------------------------------------#
+#
+# OTF2
+#
+# ----------------------------------------------------------------------------------------#
+
+include(OTF2)
 
 # ----------------------------------------------------------------------------------------#
 #

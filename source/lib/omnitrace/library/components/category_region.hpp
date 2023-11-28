@@ -46,6 +46,9 @@ namespace quirk
 struct causal : concepts::quirk_type
 {};
 
+struct otf2 : concepts::quirk_type
+{};
+
 struct perfetto : concepts::quirk_type
 {};
 
@@ -148,6 +151,9 @@ category_region<CategoryT>::start(std::string_view name, Args&&... args)
     constexpr bool _ct_use_perfetto =
         (sizeof...(OptsT) == 0 || is_one_of<quirk::perfetto, type_list<OptsT...>>::value);
 
+    constexpr bool _ct_use_otf2 =
+        (sizeof...(OptsT) == 0 || is_one_of<quirk::otf2, type_list<OptsT...>>::value);
+
     constexpr bool _ct_use_causal =
         (sizeof...(OptsT) == 0 || is_one_of<quirk::causal, type_list<OptsT...>>::value);
 
@@ -169,13 +175,13 @@ category_region<CategoryT>::start(std::string_view name, Args&&... args)
     {
         if constexpr(!is_one_of<CategoryT, causal_throughput_categories_t>::value)
         {
-            if(get_use_causal()) causal::push_progress_point(name);
+            if(config::get_use_causal()) causal::push_progress_point(name);
         }
     }
 
     if constexpr(_ct_use_timemory)
     {
-        if(get_use_timemory())
+        if(config::get_use_timemory())
         {
             tracing::push_timemory(CategoryT{}, name, std::forward<Args>(args)...);
         }
@@ -183,9 +189,17 @@ category_region<CategoryT>::start(std::string_view name, Args&&... args)
 
     if constexpr(_ct_use_perfetto)
     {
-        if(get_use_perfetto())
+        if(config::get_use_perfetto())
         {
             tracing::push_perfetto(CategoryT{}, name.data(), std::forward<Args>(args)...);
+        }
+    }
+
+    if constexpr(_ct_use_otf2)
+    {
+        if(config::get_use_otf2())
+        {
+            tracing::push_otf2(CategoryT{}, name, std::forward<Args>(args)...);
         }
     }
 }
@@ -208,6 +222,9 @@ category_region<CategoryT>::stop(std::string_view name, Args&&... args)
     constexpr bool _ct_use_perfetto =
         (sizeof...(OptsT) == 0 || is_one_of<quirk::perfetto, type_list<OptsT...>>::value);
 
+    constexpr bool _ct_use_otf2 =
+        (sizeof...(OptsT) == 0 || is_one_of<quirk::otf2, type_list<OptsT...>>::value);
+
     constexpr bool _ct_use_causal =
         (sizeof...(OptsT) == 0 || is_one_of<quirk::causal, type_list<OptsT...>>::value);
 
@@ -223,6 +240,14 @@ category_region<CategoryT>::stop(std::string_view name, Args&&... args)
         if constexpr(is_one_of<CategoryT, tracing_count_categories_t>::value)
         {
             ++tracing::pop_count();
+        }
+
+        if constexpr(_ct_use_otf2)
+        {
+            if(config::get_use_otf2())
+            {
+                tracing::pop_otf2(CategoryT{}, name, std::forward<Args>(args)...);
+            }
         }
 
         if constexpr(_ct_use_perfetto)

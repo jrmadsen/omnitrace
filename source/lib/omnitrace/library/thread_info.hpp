@@ -100,6 +100,7 @@ struct thread_info
 
     uint64_t get_start() const;
     uint64_t get_stop() const;
+    uint64_t get_duration() const;
 
     bool            is_valid_time(uint64_t _ts) const;
     bool            is_valid_lifetime(uint64_t _beg, uint64_t _end) const;

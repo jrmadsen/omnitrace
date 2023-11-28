@@ -27,7 +27,7 @@ else()
        AND LIBOMP_LIBRARY
        AND COMMAND omnitrace_custom_compilation
        AND USE_CLANG_OMP)
-        target_compile_options(openmp-common PUBLIC -W -Wall -fopenmp=libomp)
+        target_compile_options(openmp-common PUBLIC -W -Wall -fopenmp)
         target_link_libraries(openmp-common PUBLIC ${LIBOMP_LIBRARY})
         omnitrace_custom_compilation(COMPILER ${CLANGXX_EXECUTABLE} TARGET openmp-common)
         omnitrace_custom_compilation(COMPILER ${CLANGXX_EXECUTABLE} TARGET openmp-cg)

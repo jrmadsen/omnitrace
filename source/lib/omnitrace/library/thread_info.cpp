@@ -345,6 +345,12 @@ thread_info::get_stop() const
     return lifetime.second;
 }
 
+uint64_t
+thread_info::get_duration() const
+{
+    return (lifetime.second > lifetime.first) ? (lifetime.second - lifetime.first) : 0;
+}
+
 bool
 thread_info::is_valid_time(uint64_t _ts) const
 {

@@ -28,6 +28,7 @@ checkout_git_submodule(
     RELATIVE_PATH external/kokkos WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} REPO_URL
     https://github.com/kokkos/kokkos.git REPO_BRANCH develop)
 
+set(CMAKE_BUILD_RPATH "\$ORIGIN:/opt/rocm/lib")
 set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY ON)
 
 add_subdirectory(kokkos EXCLUDE_FROM_ALL)

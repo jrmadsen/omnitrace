@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
 project(omnitrace-lulesh-example LANGUAGES C CXX)
 
+set(CMAKE_BUILD_RPATH "\$ORIGIN:/opt/rocm/lib")
+
 if(OMNITRACE_DISABLE_EXAMPLES)
     get_filename_component(_DIR ${CMAKE_CURRENT_LIST_DIR} NAME)
 

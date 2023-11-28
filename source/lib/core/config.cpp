@@ -229,9 +229,6 @@ configure_settings(bool _init)
 
     auto _config = settings::shared_instance();
 
-    // if using timemory, default to perfetto being off
-    auto _default_perfetto_v = !tim::get_env<bool>("OMNITRACE_PROFILE", false, false);
-
     auto _system_backend =
         tim::get_env("OMNITRACE_PERFETTO_BACKEND_SYSTEM", false, false);
 
@@ -271,16 +268,39 @@ configure_settings(bool _init)
         get_env<size_t>("OMNITRACE_NUM_THREADS", 1), "threading", "performance",
         "sampling", "parallelism", "advanced");
 
-    OMNITRACE_CONFIG_SETTING(bool, "OMNITRACE_TRACE", "Enable perfetto backend",
-                             _default_perfetto_v, "backend", "perfetto");
+    OMNITRACE_CONFIG_SETTING(bool, "OMNITRACE_TRACE", "Enable tracing", true, "trace",
+                             "backend", "perfetto", "otf2");
 
-    OMNITRACE_CONFIG_SETTING(bool, "OMNITRACE_USE_PERFETTO",
-                             "[DEPRECATED] Renamed to OMNITRACE_TRACE",
-                             _default_perfetto_v, "backend", "perfetto", "deprecated");
+    OMNITRACE_CONFIG_SETTING(std::string, "OMNITRACE_TRACE_FORMAT",
+                             "Set tracing file format", "perfetto", "trace", "io", "otf2",
+                             "perfetto")
+        ->set_choices({ "otf2", "perfetto" });
 
-    OMNITRACE_CONFIG_SETTING(bool, "OMNITRACE_PROFILE", "Enable timemory backend",
-                             !_config->get<bool>("OMNITRACE_TRACE"), "backend",
-                             "timemory");
+    OMNITRACE_CONFIG_SETTING(bool, "OMNITRACE_PROFILE", "Enable profiling", false,
+                             "profile", "backend", "timemory");
+
+    OMNITRACE_CONFIG_SETTING(std::string, "OMNITRACE_PROFILE_FORMAT",
+                             "Set profile file format", "text,json", "profile", "io",
+                             "timemory")
+        ->set_choices({ "text", "json", "stdout" });
+
+    OMNITRACE_CONFIG_SETTING(
+        bool, "OMNITRACE_USE_PERFETTO", "Enable perfetto backend",
+        _config->get<bool>("OMNITRACE_TRACE") &&
+            _config->get<std::string>("OMNITRACE_TRACE_FORMAT").find("perfetto") !=
+                std::string::npos,
+        "backend", "perfetto", "trace");
+
+    OMNITRACE_CONFIG_SETTING(
+        bool, "OMNITRACE_USE_OTF2", "Enable tracing with OTF2 backend",
+        _config->get<bool>("OMNITRACE_TRACE") &&
+            _config->get<std::string>("OMNITRACE_TRACE_FORMAT").find("otf2") !=
+                std::string::npos,
+        "backend", "otf2", "trace", "vampir");
+
+    OMNITRACE_CONFIG_SETTING(bool, "OMNITRACE_USE_TIMEMORY", "Enable timemory backend",
+                             _config->get<bool>("OMNITRACE_PROFILE"), "backend",
+                             "timemory", "profile");
 
     OMNITRACE_CONFIG_SETTING(
         bool, "OMNITRACE_USE_TIMEMORY", "[DEPRECATED] Renamed to OMNITRACE_PROFILE",
@@ -725,6 +745,10 @@ configure_settings(bool _init)
     OMNITRACE_CONFIG_SETTING(std::string, "OMNITRACE_PERFETTO_FILE", "Perfetto filename",
                              std::string{ "perfetto-trace.proto" }, "perfetto", "io",
                              "filename", "advanced");
+
+    OMNITRACE_CONFIG_SETTING(std::string, "OMNITRACE_OTF2_FILE", "OTF2 filename",
+                             std::string{ "vampir-trace" }, "otf2", "io", "filename",
+                             "advanced");
 
     OMNITRACE_CONFIG_SETTING(bool, "OMNITRACE_USE_TEMPORARY_FILES",
                              "Write data to temporary files to minimize the memory usage "
@@ -1833,21 +1857,28 @@ get_verbose()
     return static_cast<tim::tsettings<int>&>(*_v->second).get();
 }
 
-bool&
+bool
 get_use_perfetto()
 {
     static auto _v = get_config()->find("OMNITRACE_TRACE");
     return static_cast<tim::tsettings<bool>&>(*_v->second).get();
 }
 
-bool&
+bool
+get_use_otf2()
+{
+    static auto _v = get_config()->find("OMNITRACE_USE_OTF2");
+    return static_cast<tim::tsettings<bool>&>(*_v->second).get();
+}
+
+bool
 get_use_timemory()
 {
     static auto _v = get_config()->find("OMNITRACE_PROFILE");
     return static_cast<tim::tsettings<bool>&>(*_v->second).get();
 }
 
-bool&
+bool
 get_use_causal()
 {
     static auto _v = get_config()->find("OMNITRACE_USE_CAUSAL");
@@ -1909,7 +1940,7 @@ get_use_roctx()
 #endif
 }
 
-bool&
+bool
 get_use_sampling()
 {
 #if defined(TIMEMORY_USE_LIBUNWIND)
@@ -1923,21 +1954,21 @@ get_use_sampling()
 #endif
 }
 
-bool&
+bool
 get_use_process_sampling()
 {
     static auto _v = get_config()->find("OMNITRACE_USE_PROCESS_SAMPLING");
     return static_cast<tim::tsettings<bool>&>(*_v->second).get();
 }
 
-bool&
+bool
 get_use_pid()
 {
     static auto _v = get_config()->find("OMNITRACE_USE_PID");
     return static_cast<tim::tsettings<bool>&>(*_v->second).get();
 }
 
-bool&
+bool
 get_use_mpip()
 {
     static auto _v = get_config()->find("OMNITRACE_USE_MPIP");
@@ -2205,6 +2236,33 @@ get_perfetto_output_filename()
     if(!_val.empty() && _val.at(0) != '/')
         return settings::format(JOIN('/', "%env{PWD}%", _val), get_config()->get_tag());
     return _val;
+}
+
+std::pair<std::string, std::string>
+get_otf2_output_filename()
+{
+    static auto _v   = get_config()->find("OMNITRACE_OTF2_FILE");
+    auto        _val = static_cast<tim::tsettings<std::string>&>(*_v->second).get();
+    auto        _cfg =
+        settings::compose_filename_config{ true, settings::default_process_suffix() };
+    _val = settings::compose_output_filename(_val, std::string{}, _cfg);
+    if(!_val.empty() && _val.at(0) != '/')
+        _val = settings::format(JOIN('/', "%env{PWD}%", _val), get_config()->get_tag());
+
+    OMNITRACE_WARNING_F(0, "OTF2 output filename: %s\n", _val.c_str());
+    std::this_thread::sleep_for(std::chrono::seconds{ 5 });
+
+    auto _pos = _val.find_last_of('/');
+    if(_pos > 0 && _pos < _val.length())
+    {
+        auto _path = _val.substr(0, _pos);
+        auto _name = _val.substr(_pos + 1);
+        return std::make_pair(_path, _name);
+    }
+
+    return std::make_pair(
+        settings::format(settings::output_path(), get_config()->get_tag()),
+        settings::format(settings::output_prefix(), get_config()->get_tag()));
 }
 
 double
