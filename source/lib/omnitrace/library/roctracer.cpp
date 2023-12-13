@@ -757,7 +757,7 @@ hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void*
                 {
                     if(itr)
                     {
-                        if(auto _val = binary::lookup_ipaddr_entry<true>(itr->address());
+                        if(auto _val = binary::lookup_ipaddr_entry<false>(itr->address());
                            _val)
                         {
                             _bt_data->emplace_back(std::move(*_val));
