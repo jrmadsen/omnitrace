@@ -809,7 +809,6 @@ hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void*
                         if(_enable_backtraces && _bt_data && !_bt_data->empty())
                         {
                             const std::string _unk    = "??";
-                            const size_t      _bt_total = _bt_data->size();
                             size_t            _bt_cnt = 0;
                             for(const auto& itr : *_bt_data)
                             {
@@ -821,9 +820,11 @@ hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void*
                                                                : join("", itr.lineno);
                                 auto _entry = join("", demangle(*_func), " @ ",
                                                    join(':', *_loc, _line));
-                                if (_bt_total > 10 && _bt_cnt < 10)
+                                if (_bt_cnt < 10)
                                 {
-                                    // Prepend zero for better ordering in UI
+                                    // Prepend zero for better ordering in UI.
+                                    // Only one zero is ever necessary since stack depth
+                                    // is limited to 16.
                                     tracing::add_perfetto_annotation(
                                         ctx, join("", "frame#0", _bt_cnt++), _entry);
                                 }
