@@ -816,11 +816,11 @@ hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void*
                                     (itr.name.empty()) ? &_unk : &itr.name;
                                 const auto* _loc =
                                     (itr.location.empty()) ? &_unk : &itr.location;
-                                auto _line = (itr.lineno == 0) ? std::string{ "?" }
-                                                               : join("", itr.lineno);
+                                auto _line  = (itr.lineno == 0) ? std::string{ "?" }
+                                                                : join("", itr.lineno);
                                 auto _entry = join("", demangle(*_func), " @ ",
                                                    join(':', *_loc, _line));
-                                if (_bt_cnt < 10)
+                                if(_bt_cnt < 10)
                                 {
                                     // Prepend zero for better ordering in UI.
                                     // Only one zero is ever necessary since stack depth
