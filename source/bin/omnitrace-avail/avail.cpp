@@ -641,6 +641,8 @@ main(int argc, char** argv)
     }
     dump_log();
 
+    const_cast<std::shared_ptr<tim::settings>&>(tim::settings::shared_instance()).reset();
+
     return 0;
 }
 

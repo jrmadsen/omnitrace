@@ -20,6 +20,8 @@ omnitrace_add_interface_library(omnitrace-rocprofiler
                                 "Provides flags and libraries for rocprofiler")
 omnitrace_add_interface_library(omnitrace-rocm-smi
                                 "Provides flags and libraries for rocm-smi")
+omnitrace_add_interface_library(omnitrace-rocprofiler-sdk
+                                "Provides flags and libraries for rocprofiler-sdk")
 omnitrace_add_interface_library(
     omnitrace-rccl "Provides flags for ROCm Communication Collectives Library (RCCL)")
 omnitrace_add_interface_library(omnitrace-mpi "Provides MPI or MPI headers")
@@ -41,6 +43,7 @@ set(OMNITRACE_EXTENSION_LIBRARIES
     omnitrace::omnitrace-roctracer
     omnitrace::omnitrace-rocprofiler
     omnitrace::omnitrace-rocm-smi
+    omnitrace::omnitrace-rocprofiler-sdk
     omnitrace::omnitrace-rccl
     omnitrace::omnitrace-bfd
     omnitrace::omnitrace-mpi
@@ -201,6 +204,7 @@ endif()
 # rocprofiler
 #
 # ----------------------------------------------------------------------------------------#
+
 if(OMNITRACE_USE_ROCPROFILER)
     find_package(rocprofiler ${omnitrace_FIND_QUIETLY} REQUIRED)
     omnitrace_target_compile_definitions(omnitrace-rocprofiler
@@ -219,6 +223,20 @@ if(OMNITRACE_USE_ROCM_SMI)
     omnitrace_target_compile_definitions(omnitrace-rocm-smi
                                          INTERFACE OMNITRACE_USE_ROCM_SMI)
     target_link_libraries(omnitrace-rocm-smi INTERFACE rocm-smi::rocm-smi)
+endif()
+
+# ----------------------------------------------------------------------------------------#
+#
+# rocprofiler-sdk
+#
+# ----------------------------------------------------------------------------------------#
+
+if(OMNITRACE_USE_ROCPROFILER_SDK)
+    find_package(rocprofiler-sdk ${omnitrace_FIND_QUIETLY} REQUIRED)
+    omnitrace_target_compile_definitions(omnitrace-rocprofiler-sdk
+                                         INTERFACE OMNITRACE_USE_ROCPROFILER_SDK)
+    target_link_libraries(omnitrace-rocprofiler-sdk
+                          INTERFACE rocprofiler-sdk::rocprofiler-sdk)
 endif()
 
 # ----------------------------------------------------------------------------------------#
