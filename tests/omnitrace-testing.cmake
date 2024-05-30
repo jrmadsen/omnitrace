@@ -237,7 +237,7 @@ endif()
 # -------------------------------------------------------------------------------------- #
 
 set(_VALID_GPU OFF)
-if(OMNITRACE_USE_HIP AND (NOT DEFINED OMNITRACE_CI_GPU OR OMNITRACE_CI_GPU))
+if(OMNITRACE_USE_ROCM AND (NOT DEFINED OMNITRACE_CI_GPU OR OMNITRACE_CI_GPU))
     set(_VALID_GPU ON)
     find_program(
         OMNITRACE_ROCM_SMI_EXE
@@ -265,7 +265,7 @@ if(OMNITRACE_USE_HIP AND (NOT DEFINED OMNITRACE_CI_GPU OR OMNITRACE_CI_GPU))
     endif()
 endif()
 
-set(LULESH_USE_GPU ${LULESH_USE_HIP})
+set(LULESH_USE_GPU ${LULESH_USE_ROCM})
 if(LULESH_USE_CUDA)
     set(LULESH_USE_GPU ON)
 endif()
@@ -441,8 +441,8 @@ function(OMNITRACE_ADD_TEST)
     if(TEST_GPU)
         list(APPEND TEST_LABELS "gpu")
 
-        if(NOT "OMNITRACE_USE_ROCTRACER=OFF" IN_LIST TEST_ENVIRONMENT)
-            list(APPEND TEST_LABELS "roctracer")
+        if(NOT "OMNITRACE_USE_ROCM=OFF" IN_LIST TEST_ENVIRONMENT)
+            list(APPEND TEST_LABELS "rocm")
         endif()
 
         if(NOT "OMNITRACE_USE_ROCM_SMI=OFF" IN_LIST TEST_ENVIRONMENT)
@@ -450,19 +450,14 @@ function(OMNITRACE_ADD_TEST)
         endif()
     endif()
 
-    if("OMNITRACE_USE_ROCTRACER=ON" IN_LIST TEST_ENVIRONMENT AND NOT "roctracer" IN_LIST
-                                                                 TEST_ENVIRONMENT)
-        list(APPEND TEST_LABELS "roctracer")
+    if("OMNITRACE_USE_ROCM=ON" IN_LIST TEST_ENVIRONMENT AND NOT "rocm" IN_LIST
+                                                            TEST_ENVIRONMENT)
+        list(APPEND TEST_LABELS "rocm")
     endif()
 
     if("OMNITRACE_USE_ROCM_SMI=ON" IN_LIST TEST_ENVIRONMENT AND NOT "rocm-smi" IN_LIST
                                                                 TEST_ENVIRONMENT)
         list(APPEND TEST_LABELS "rocm-smi")
-    endif()
-
-    if("OMNITRACE_USE_ROCPROFILER=ON" IN_LIST TEST_ENVIRONMENT
-       AND NOT "rocprofiler" IN_LIST TEST_ENVIRONMENT)
-        list(APPEND TEST_LABELS "rocprofiler")
     endif()
 
     if(TARGET ${TEST_TARGET})

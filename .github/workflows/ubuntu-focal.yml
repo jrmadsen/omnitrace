@@ -140,7 +140,7 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=/opt/omnitrace
           -DOMNITRACE_BUILD_TESTING=ON
           -DOMNITRACE_USE_MPI=OFF
-          -DOMNITRACE_USE_HIP=OFF
+          -DOMNITRACE_USE_ROCM=OFF
           -DOMNITRACE_USE_OMPT=OFF
           -DOMNITRACE_USE_PAPI=OFF
           -DOMNITRACE_USE_PYTHON=${{ matrix.python }}
@@ -336,7 +336,7 @@ jobs:
           -DOMNITRACE_BUILD_EXTRA_OPTIMIZATIONS=OFF
           -DOMNITRACE_BUILD_LTO=OFF
           -DOMNITRACE_USE_MPI=OFF
-          -DOMNITRACE_USE_HIP=ON
+          -DOMNITRACE_USE_ROCM=ON
           -DOMNITRACE_MAX_THREADS=64
           -DOMNITRACE_USE_PAPI=OFF
           -DOMNITRACE_USE_OMPT=OFF
@@ -482,7 +482,7 @@ jobs:
           -DOMNITRACE_BUILD_TESTING=ON
           -DOMNITRACE_BUILD_DYNINST=ON
           -DOMNITRACE_USE_MPI=${USE_MPI}
-          -DOMNITRACE_USE_HIP=OFF
+          -DOMNITRACE_USE_ROCM=OFF
           -DOMNITRACE_USE_PYTHON=${{ matrix.python }}
           -DOMNITRACE_USE_OMPT=${{ matrix.ompt }}
           -DOMNITRACE_USE_PAPI=${{ matrix.papi }}
@@ -629,7 +629,7 @@ jobs:
           -DOMNITRACE_USE_PYTHON=ON
           -DOMNITRACE_USE_OMPT=ON
           -DOMNITRACE_USE_PAPI=ON
-          -DOMNITRACE_USE_HIP=OFF
+          -DOMNITRACE_USE_ROCM=OFF
           -DOMNITRACE_USE_RCCL=OFF
           -DOMNITRACE_MAX_THREADS=64
           -DOMNITRACE_DISABLE_EXAMPLES="transpose;rccl"

@@ -42,7 +42,7 @@ jobs:
       fail-fast: false
       matrix:
         compiler: ['g++-11', 'g++-12']
-        hip: ['OFF']
+        rocm: ['OFF']
         mpi: ['OFF']
         ompt: ['OFF']
         papi: ['OFF']
@@ -58,7 +58,7 @@ jobs:
         rocm-version: ['0.0']
         include:
           - compiler: 'g++'
-            hip: 'ON'
+            rocm: 'ON'
             mpi: 'OFF'
             ompt: 'OFF'
             papi: 'OFF'
@@ -73,7 +73,7 @@ jobs:
             build-dyninst: 'OFF'
             rocm-version: '5.3'
           - compiler: 'g++'
-            hip: 'ON'
+            rocm: 'ON'
             mpi: 'OFF'
             ompt: 'OFF'
             papi: 'OFF'
@@ -127,7 +127,7 @@ jobs:
           echo "deb [arch=amd64] https://repo.radeon.com/rocm/apt/${{ matrix.rocm-version }}/ jammy main" | tee /etc/apt/sources.list.d/rocm.list
           apt-get update
           ROCM_VERSION=$(apt-cache search rocm-dev[0-9] | awk '{print $1}' | sed 's/rocm-dev//g')
-          apt-get install -y {rocm-dev,hip-dev,roctracer-dev,rocprofiler-dev,rocm-smi-lib,rocminfo}${ROCM_VERSION}
+          apt-get install -y {rocm-dev,rocprofiler-sdk,rocm-smi-lib,rocminfo}${ROCM_VERSION}
           echo "/opt/rocm/bin" >> $GITHUB_PATH
           echo "ROCM_PATH=/opt/rocm" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=/opt/rocm/lib:${LD_LIBRARY_PATH}" >> $GITHUB_ENV
@@ -154,7 +154,7 @@ jobs:
         cmake --version &&
         TAG="" &&
         append-tagname() { if [ "${1}" == "ON" ]; then TAG="${TAG}-${2}"; fi; } &&
-        append-tagname ${{ matrix.hip }} rocm-${{ matrix.rocm-version }} &&
+        append-tagname ${{ matrix.rocm }} rocm-${{ matrix.rocm-version }} &&
         append-tagname ${{ matrix.mpi }} mpi &&
         append-tagname ${{ matrix.ompt }} ompt &&
         append-tagname ${{ matrix.papi }} papi &&
@@ -177,7 +177,7 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=/opt/omnitrace-dev
           -DOMNITRACE_BUILD_TESTING=ON
           -DOMNITRACE_USE_MPI=${{ matrix.mpi }}
-          -DOMNITRACE_USE_HIP=${{ matrix.hip }}
+          -DOMNITRACE_USE_ROCM=${{ matrix.rocm }}
           -DOMNITRACE_USE_OMPT=${{ matrix.ompt }}
           -DOMNITRACE_USE_PAPI=${{ matrix.papi }}
           -DOMNITRACE_USE_PYTHON=${{ matrix.python }}

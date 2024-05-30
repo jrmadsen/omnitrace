@@ -13,11 +13,8 @@ omnitrace_add_interface_library(omnitrace-threading "Enables multithreading supp
 omnitrace_add_interface_library(
     omnitrace-dyninst
     "Provides flags and libraries for Dyninst (dynamic instrumentation)")
-omnitrace_add_interface_library(omnitrace-hip "Provides flags and libraries for HIP")
-omnitrace_add_interface_library(omnitrace-roctracer
-                                "Provides flags and libraries for roctracer")
-omnitrace_add_interface_library(omnitrace-rocprofiler
-                                "Provides flags and libraries for rocprofiler")
+omnitrace_add_interface_library(omnitrace-rocm
+                                "Provides flags and libraries for rocm-smi")
 omnitrace_add_interface_library(omnitrace-rocm-smi
                                 "Provides flags and libraries for rocm-smi")
 omnitrace_add_interface_library(omnitrace-rocprofiler-sdk
@@ -36,12 +33,11 @@ omnitrace_add_interface_library(omnitrace-timemory "Provides timemory libraries"
 omnitrace_add_interface_library(omnitrace-timemory-config
                                 "CMake interface library applied to all timemory targets")
 omnitrace_add_interface_library(omnitrace-compile-definitions "Compile definitions")
+omnitrace_add_interface_library(omnitrace-tomlplusplus "Provides toml++")
 
 # libraries with relevant compile definitions
 set(OMNITRACE_EXTENSION_LIBRARIES
-    omnitrace::omnitrace-hip
-    omnitrace::omnitrace-roctracer
-    omnitrace::omnitrace-rocprofiler
+    omnitrace::omnitrace-rocm
     omnitrace::omnitrace-rocm-smi
     omnitrace::omnitrace-rocprofiler-sdk
     omnitrace::omnitrace-rccl
@@ -115,13 +111,12 @@ endforeach()
 
 # ----------------------------------------------------------------------------------------#
 #
-# hip version
+# ROCm version
 #
 # ----------------------------------------------------------------------------------------#
 
-if(OMNITRACE_USE_HIP
-   OR OMNITRACE_USE_ROCTRACER
-   OR OMNITRACE_USE_ROCPROFILER
+if(OMNITRACE_USE_ROCM
+   OR OMNITRACE_USE_ROCPROFILER_SDK
    OR OMNITRACE_USE_ROCM_SMI)
     find_package(ROCmVersion)
 
@@ -151,13 +146,13 @@ if(OMNITRACE_USE_HIP
     endif()
 
     set(OMNITRACE_ROCM_VERSION ${ROCmVersion_FULL_VERSION})
-    set(OMNITRACE_HIP_VERSION_MAJOR ${ROCmVersion_MAJOR_VERSION})
-    set(OMNITRACE_HIP_VERSION_MINOR ${ROCmVersion_MINOR_VERSION})
-    set(OMNITRACE_HIP_VERSION_PATCH ${ROCmVersion_PATCH_VERSION})
-    set(OMNITRACE_HIP_VERSION ${ROCmVersion_TRIPLE_VERSION})
+    set(OMNITRACE_ROCM_VERSION_MAJOR ${ROCmVersion_MAJOR_VERSION})
+    set(OMNITRACE_ROCM_VERSION_MINOR ${ROCmVersion_MINOR_VERSION})
+    set(OMNITRACE_ROCM_VERSION_PATCH ${ROCmVersion_PATCH_VERSION})
+    set(OMNITRACE_ROCM_VERSION ${ROCmVersion_TRIPLE_VERSION})
 
-    if(OMNITRACE_HIP_VERSION_MAJOR GREATER_EQUAL 4 AND OMNITRACE_HIP_VERSION_MINOR
-                                                       GREATER 3)
+    if(OMNITRACE_ROCM_VERSION_MAJOR GREATER_EQUAL 4 AND OMNITRACE_ROCM_VERSION_MINOR
+                                                        GREATER 3)
         set(roctracer_kfdwrapper_LIBRARY)
     endif()
 
@@ -167,49 +162,10 @@ if(OMNITRACE_USE_HIP
 
     omnitrace_add_feature(OMNITRACE_ROCM_VERSION "ROCm version used by omnitrace")
 else()
-    set(OMNITRACE_HIP_VERSION "0.0.0")
-    set(OMNITRACE_HIP_VERSION_MAJOR 0)
-    set(OMNITRACE_HIP_VERSION_MINOR 0)
-    set(OMNITRACE_HIP_VERSION_PATCH 0)
-endif()
-
-# ----------------------------------------------------------------------------------------#
-#
-# HIP
-#
-# ----------------------------------------------------------------------------------------#
-
-if(OMNITRACE_USE_HIP)
-    find_package(hip ${omnitrace_FIND_QUIETLY} REQUIRED)
-    omnitrace_target_compile_definitions(omnitrace-hip INTERFACE OMNITRACE_USE_HIP)
-    target_link_libraries(omnitrace-hip INTERFACE hip::host)
-endif()
-
-# ----------------------------------------------------------------------------------------#
-#
-# roctracer
-#
-# ----------------------------------------------------------------------------------------#
-
-if(OMNITRACE_USE_ROCTRACER)
-    find_package(roctracer ${omnitrace_FIND_QUIETLY} REQUIRED)
-    omnitrace_target_compile_definitions(omnitrace-roctracer
-                                         INTERFACE OMNITRACE_USE_ROCTRACER)
-    target_link_libraries(omnitrace-roctracer INTERFACE roctracer::roctracer
-                                                        omnitrace::omnitrace-hip)
-endif()
-
-# ----------------------------------------------------------------------------------------#
-#
-# rocprofiler
-#
-# ----------------------------------------------------------------------------------------#
-
-if(OMNITRACE_USE_ROCPROFILER)
-    find_package(rocprofiler ${omnitrace_FIND_QUIETLY} REQUIRED)
-    omnitrace_target_compile_definitions(omnitrace-rocprofiler
-                                         INTERFACE OMNITRACE_USE_ROCPROFILER)
-    target_link_libraries(omnitrace-rocprofiler INTERFACE rocprofiler::rocprofiler)
+    set(OMNITRACE_ROCM_VERSION "0.0.0")
+    set(OMNITRACE_ROCM_VERSION_MAJOR 0)
+    set(OMNITRACE_ROCM_VERSION_MINOR 0)
+    set(OMNITRACE_ROCM_VERSION_PATCH 0)
 endif()
 
 # ----------------------------------------------------------------------------------------#
@@ -249,6 +205,19 @@ if(OMNITRACE_USE_RCCL)
     find_package(RCCL-Headers ${omnitrace_FIND_QUIETLY} REQUIRED)
     target_link_libraries(omnitrace-rccl INTERFACE roc::rccl-headers)
     omnitrace_target_compile_definitions(omnitrace-rccl INTERFACE OMNITRACE_USE_RCCL)
+endif()
+
+# ----------------------------------------------------------------------------------------#
+#
+# ROCm
+#
+# ----------------------------------------------------------------------------------------#
+
+if(OMNITRACE_USE_ROCM
+   AND (OMNITRACE_USE_ROCM_SMI
+        OR OMNITRACE_USE_ROCPROFILER_SDK
+        OR OMNITRACE_USE_RCCL))
+    omnitrace_target_compile_definitions(omnitrace-rocm INTERFACE OMNITRACE_USE_ROCM)
 endif()
 
 # ----------------------------------------------------------------------------------------#
@@ -962,6 +931,22 @@ endif()
 
 omnitrace_watch_for_change(OMNITRACE_INSTALL_PYTHONDIR)
 set(CMAKE_INSTALL_PYTHONDIR ${OMNITRACE_INSTALL_PYTHONDIR})
+
+# ----------------------------------------------------------------------------------------#
+#
+# TOML++
+#
+# ----------------------------------------------------------------------------------------#
+
+omnitrace_checkout_git_submodule(
+    RELATIVE_PATH external/tomlplusplus
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    REPO_URL https://github.com/jrmadsen/tomlplusplus.git
+    REPO_BRANCH v3.4.0)
+
+target_include_directories(
+    omnitrace-tomlplusplus SYSTEM
+    INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/external/tomlplusplus/include>)
 
 # ----------------------------------------------------------------------------------------#
 #

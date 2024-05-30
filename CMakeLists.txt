@@ -167,18 +167,14 @@ omnitrace_add_option(OMNITRACE_USE_CLANG_TIDY "Enable clang-tidy" OFF)
 omnitrace_add_option(OMNITRACE_USE_BFD
                      "Enable BFD support (map call-stack samples to LOC)" ON)
 omnitrace_add_option(OMNITRACE_USE_MPI "Enable MPI support" OFF)
-omnitrace_add_option(OMNITRACE_USE_HIP "Enable HIP support" ON)
+omnitrace_add_option(OMNITRACE_USE_ROCM "Enable ROCm support" ON)
 omnitrace_add_option(OMNITRACE_USE_PAPI "Enable HW counter support via PAPI" ON)
-omnitrace_add_option(OMNITRACE_USE_ROCTRACER "Enable roctracer support"
-                     ${OMNITRACE_USE_HIP})
-omnitrace_add_option(OMNITRACE_USE_ROCPROFILER "Enable rocprofiler support"
-                     ${OMNITRACE_USE_HIP})
 omnitrace_add_option(
     OMNITRACE_USE_ROCM_SMI "Enable rocm-smi support for power/temp/etc. sampling"
-    ${OMNITRACE_USE_HIP})
+    ${OMNITRACE_USE_ROCM})
 omnitrace_add_option(OMNITRACE_USE_ROCPROFILER_SDK "Enable rocprofiler-sdk support"
-                     ${OMNITRACE_USE_HIP})
-omnitrace_add_option(OMNITRACE_USE_RCCL "Enable RCCL support" ${OMNITRACE_USE_HIP})
+                     ${OMNITRACE_USE_ROCM})
+omnitrace_add_option(OMNITRACE_USE_RCCL "Enable RCCL support" ${OMNITRACE_USE_ROCM})
 omnitrace_add_option(OMNITRACE_USE_MPI_HEADERS
                      "Enable wrapping MPI functions w/o enabling MPI dependency" ON)
 omnitrace_add_option(OMNITRACE_USE_OMPT "Enable OpenMP tools support" ON)
@@ -205,30 +201,26 @@ elseif("$ENV{OMNITRACE_CI}")
     endif()
 endif()
 
-if(NOT OMNITRACE_USE_HIP)
-    set(OMNITRACE_USE_ROCTRACER
+if(NOT OMNITRACE_USE_ROCM)
+    set(OMNITRACE_USE_ROCPROFILER_SDK
         OFF
-        CACHE BOOL "Disabled via OMNITRACE_USE_HIP=OFF" FORCE)
-    set(OMNITRACE_USE_ROCPROFILER
-        OFF
-        CACHE BOOL "Disabled via OMNITRACE_USE_HIP=OFF" FORCE)
+        CACHE BOOL "Disabled via OMNITRACE_USE_ROCM=OFF" FORCE)
     set(OMNITRACE_USE_ROCM_SMI
         OFF
-        CACHE BOOL "Disabled via OMNITRACE_USE_HIP=OFF" FORCE)
+        CACHE BOOL "Disabled via OMNITRACE_USE_ROCM=OFF" FORCE)
     set(OMNITRACE_USE_RCCL
         OFF
-        CACHE BOOL "Disabled via OMNITRACE_USE_HIP=OFF" FORCE)
+        CACHE BOOL "Disabled via OMNITRACE_USE_ROCM=OFF" FORCE)
 elseif(
-    OMNITRACE_USE_HIP
-    AND NOT OMNITRACE_USE_ROCTRACER
-    AND NOT OMNITRACE_USE_ROCPROFILER
+    OMNITRACE_USE_ROCM
+    AND NOT OMNITRACE_USE_ROCPROFILER_SDK
     AND NOT OMNITRACE_USE_ROCM_SMI
     AND NOT OMNITRACE_USE_RCCL)
     omnitrace_message(
         AUTHOR_WARNING
-        "Setting OMNITRACE_USE_HIP=OFF because roctracer, rocprofiler, rccl, and rocm-smi options are disabled"
+        "Setting OMNITRACE_USE_ROCM=OFF because rocprofiler-sdk, rccl, and rocm-smi options are disabled"
         )
-    set(OMNITRACE_USE_HIP OFF)
+    set(OMNITRACE_USE_ROCM OFF)
 endif()
 
 if(OMNITRACE_BUILD_TESTING)
@@ -362,14 +354,6 @@ endif()
 # miscellaneous installs
 #
 # ------------------------------------------------------------------------------#
-
-if(NOT OMNITRACE_USE_ROCTRACER AND NOT OMNITRACE_USE_ROCPROFILER)
-    set(OMNITRACE_HSA_ENV "# ")
-endif()
-
-if(NOT OMNITRACE_USE_ROCPROFILER)
-    set(OMNITRACE_ROCP_ENV "# ")
-endif()
 
 configure_file(
     ${PROJECT_SOURCE_DIR}/perfetto.cfg

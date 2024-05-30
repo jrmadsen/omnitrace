@@ -65,11 +65,13 @@ target_link_libraries(
         $<BUILD_INTERFACE:omnitrace::omnitrace-perfetto>
         $<BUILD_INTERFACE:omnitrace::omnitrace-timemory>
         $<BUILD_INTERFACE:omnitrace::omnitrace-mpi>
-        $<BUILD_INTERFACE:omnitrace::omnitrace-hip>
+        $<BUILD_INTERFACE:omnitrace::omnitrace-rocm>
         $<BUILD_INTERFACE:omnitrace::omnitrace-rocm-smi>
+        $<BUILD_INTERFACE:omnitrace::omnitrace-rocprofiler-sdk>
         $<BUILD_INTERFACE:omnitrace::omnitrace-static-libgcc-optional>
         $<BUILD_INTERFACE:omnitrace::omnitrace-static-libstdcxx-optional>
         $<BUILD_INTERFACE:omnitrace::omnitrace-sanitizer>
+        $<BUILD_INTERFACE:omnitrace::omnitrace-tomlplusplus>
         $<BUILD_INTERFACE:$<IF:$<BOOL:${OMNITRACE_BUILD_LTO}>,omnitrace::omnitrace-lto,>>)
 
 set_target_properties(omnitrace-core-library PROPERTIES OUTPUT_NAME omnitrace-core)

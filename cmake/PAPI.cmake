@@ -105,13 +105,6 @@ set(_OMNITRACE_PAPI_COMPONENTS
     )
 
 if(OMNITRACE_PAPI_AUTO_COMPONENTS)
-    # rocm
-    if(OMNITRACE_USE_HIP
-       OR OMNITRACE_USE_ROCTRACER
-       OR OMNITRACE_USE_ROCM_SMI)
-        list(APPEND _OMNITRACE_PAPI_COMPONENTS rocm)
-    endif()
-
     # lmsensors
     find_path(OMNITRACE_PAPI_LMSENSORS_ROOT_DIR NAMES include/sensors/sensors.h
                                                       include/sensors.h)
@@ -205,24 +198,32 @@ externalproject_add(
     BUILD_IN_SOURCE 1
     PATCH_COMMAND
         ${CMAKE_COMMAND} -E env CC=${PAPI_C_COMPILER}
-        CFLAGS=-fPIC\ -O3\ -Wno-stringop-truncation\ -Wno-use-after-free LIBS=-lrt LDFLAGS=-lrt
-        ${OMNITRACE_PAPI_EXTRA_ENV} <SOURCE_DIR>/configure --quiet
+        CFLAGS=-fPIC\ -O3\ -Wno-stringop-truncation\ -Wno-use-after-free LIBS=-lrt
+        LDFLAGS=-lrt ${OMNITRACE_PAPI_EXTRA_ENV} <SOURCE_DIR>/configure --quiet
         --prefix=${OMNITRACE_PAPI_INSTALL_DIR} --with-static-lib=yes --with-shared-lib=no
         --with-perf-events --with-tests=no --with-components=${_OMNITRACE_PAPI_COMPONENTS}
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=-fPIC\ -O3\ -Wno-stringop-truncation\ -Wno-use-after-free
-                      ${OMNITRACE_PAPI_EXTRA_ENV} ${MAKE_EXECUTABLE} static install -s
-    BUILD_COMMAND ${CMAKE_COMMAND} -E env CFLAGS=-fPIC\ -O3\ -Wno-stringop-truncation\ -Wno-use-after-free
-                  ${OMNITRACE_PAPI_EXTRA_ENV} ${MAKE_EXECUTABLE} utils install-utils -s
+    CONFIGURE_COMMAND
+        ${CMAKE_COMMAND} -E env
+        CFLAGS=-fPIC\ -O3\ -Wno-stringop-truncation\ -Wno-use-after-free
+        ${OMNITRACE_PAPI_EXTRA_ENV} ${MAKE_EXECUTABLE} static install -s
+    BUILD_COMMAND
+        ${CMAKE_COMMAND} -E env
+        CFLAGS=-fPIC\ -O3\ -Wno-stringop-truncation\ -Wno-use-after-free
+        ${OMNITRACE_PAPI_EXTRA_ENV} ${MAKE_EXECUTABLE} utils install-utils -s
     INSTALL_COMMAND ""
     BUILD_BYPRODUCTS "${_OMNITRACE_PAPI_BUILD_BYPRODUCTS}")
 
 # target for re-executing the installation
 add_custom_target(
     omnitrace-papi-install
-    COMMAND ${CMAKE_COMMAND} -E env CFLAGS=-fPIC\ -O3\ -Wno-stringop-truncation\ -Wno-use-after-free
-            ${OMNITRACE_PAPI_EXTRA_ENV} ${MAKE_EXECUTABLE} static install -s
-    COMMAND ${CMAKE_COMMAND} -E env CFLAGS=-fPIC\ -O3\ -Wno-stringop-truncation\ -Wno-use-after-free
-            ${OMNITRACE_PAPI_EXTRA_ENV} ${MAKE_EXECUTABLE} utils install-utils -s
+    COMMAND
+        ${CMAKE_COMMAND} -E env
+        CFLAGS=-fPIC\ -O3\ -Wno-stringop-truncation\ -Wno-use-after-free
+        ${OMNITRACE_PAPI_EXTRA_ENV} ${MAKE_EXECUTABLE} static install -s
+    COMMAND
+        ${CMAKE_COMMAND} -E env
+        CFLAGS=-fPIC\ -O3\ -Wno-stringop-truncation\ -Wno-use-after-free
+        ${OMNITRACE_PAPI_EXTRA_ENV} ${MAKE_EXECUTABLE} utils install-utils -s
     WORKING_DIRECTORY ${OMNITRACE_PAPI_SOURCE_DIR}/src
     COMMENT "Installing PAPI...")
 
