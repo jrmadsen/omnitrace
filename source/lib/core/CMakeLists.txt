@@ -6,6 +6,7 @@ set(core_sources
     ${CMAKE_CURRENT_LIST_DIR}/argparse.cpp
     ${CMAKE_CURRENT_LIST_DIR}/categories.cpp
     ${CMAKE_CURRENT_LIST_DIR}/config.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/config_groups.cpp
     ${CMAKE_CURRENT_LIST_DIR}/constraint.cpp
     ${CMAKE_CURRENT_LIST_DIR}/debug.cpp
     ${CMAKE_CURRENT_LIST_DIR}/dynamic_library.cpp
@@ -14,6 +15,7 @@ set(core_sources
     ${CMAKE_CURRENT_LIST_DIR}/mproc.cpp
     ${CMAKE_CURRENT_LIST_DIR}/perf.cpp
     ${CMAKE_CURRENT_LIST_DIR}/perfetto.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/rocprofiler-sdk.cpp
     ${CMAKE_CURRENT_LIST_DIR}/state.cpp
     ${CMAKE_CURRENT_LIST_DIR}/timemory.cpp
     ${CMAKE_CURRENT_LIST_DIR}/utility.cpp)
@@ -24,18 +26,19 @@ set(core_headers
     ${CMAKE_CURRENT_LIST_DIR}/common.hpp
     ${CMAKE_CURRENT_LIST_DIR}/concepts.hpp
     ${CMAKE_CURRENT_LIST_DIR}/config.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/config_groups.hpp
     ${CMAKE_CURRENT_LIST_DIR}/constraint.hpp
     ${CMAKE_CURRENT_LIST_DIR}/debug.hpp
     ${CMAKE_CURRENT_LIST_DIR}/dynamic_library.hpp
     ${CMAKE_CURRENT_LIST_DIR}/exception.hpp
     ${CMAKE_CURRENT_LIST_DIR}/gpu.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/hip_runtime.hpp
     ${CMAKE_CURRENT_LIST_DIR}/locking.hpp
     ${CMAKE_CURRENT_LIST_DIR}/mproc.hpp
     ${CMAKE_CURRENT_LIST_DIR}/perf.hpp
     ${CMAKE_CURRENT_LIST_DIR}/perfetto.hpp
     ${CMAKE_CURRENT_LIST_DIR}/rccl.hpp
     ${CMAKE_CURRENT_LIST_DIR}/redirect.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/rocprofiler-sdk.hpp
     ${CMAKE_CURRENT_LIST_DIR}/state.hpp
     ${CMAKE_CURRENT_LIST_DIR}/timemory.hpp
     ${CMAKE_CURRENT_LIST_DIR}/utility.hpp)
@@ -51,6 +54,10 @@ add_subdirectory(containers)
 
 target_include_directories(omnitrace-core-library BEFORE
                            PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+
+target_include_directories(
+    omnitrace-core-library
+    PRIVATE ${PROJECT_SOURCE_DIR}/external/timemory/source/timemory/tpls/cereal)
 
 target_link_libraries(omnitrace-core-library
                       PRIVATE omnitrace::omnitrace-interface-library)

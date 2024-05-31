@@ -101,17 +101,17 @@ get_exe_realpath();
 
 template <typename Tp>
 bool
-set_setting_value(const std::string& _name, Tp&& _v)
+set_setting_value(const std::string& _name, Tp&& _v,
+                  settings::update_type _upd = settings::update_type::user)
 {
-    auto _user_upd = tim::settings::update_type::user;
     auto _instance = tim::settings::shared_instance();
     auto _setting  = _instance->find(_name);
     if(_setting == _instance->end()) return false;
     if(!_setting->second) return false;
     auto& itr      = _setting->second;
-    auto  _upd     = itr->set_user_updated();
-    auto  _success = itr->set(std::forward<Tp>(_v), _user_upd);
-    if(!_success) itr->set_updated(_upd);
+    auto  _old_upd = itr->get_updated_type();
+    auto  _success = itr->set(std::forward<Tp>(_v), _upd);
+    if(!_success) itr->set_updated(_old_upd);
     return _success;
 }
 
@@ -195,12 +195,6 @@ bool&
 get_use_causal() OMNITRACE_HOT;
 
 bool
-get_use_roctracer() OMNITRACE_HOT;
-
-bool
-get_use_rocprofiler() OMNITRACE_HOT;
-
-bool
 get_use_rocm_smi() OMNITRACE_HOT;
 
 bool
@@ -235,18 +229,6 @@ get_sampling_keep_internal();
 
 bool
 get_use_rcclp();
-
-bool
-get_trace_hip_api();
-
-bool
-get_trace_hip_activity();
-
-bool
-get_trace_hsa_api();
-
-bool
-get_trace_hsa_activity();
 
 size_t
 get_perfetto_shmem_size_hint();
@@ -359,9 +341,6 @@ get_trace_thread_barriers();
 
 bool
 get_trace_thread_join();
-
-std::string
-get_rocm_events();
 
 bool
 get_use_tmp_files();

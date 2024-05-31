@@ -33,8 +33,7 @@
 #include "api.hpp"
 #include "core/config.hpp"
 #include "core/gpu.hpp"
-#include "core/hip_runtime.hpp"
-#include "library/rocprofiler.hpp"
+#include "library/rocm.hpp"
 
 #include <timemory/components.hpp>
 #include <timemory/components/definition.hpp>
@@ -119,7 +118,7 @@ write_hw_counter_info(std::ostream&, const array_t<bool, N>& = {},
 namespace
 {
 // initialize HIP before main so that libomnitrace is not HSA_TOOLS_LIB
-int gpu_count = omnitrace::gpu::hip_device_count();
+int gpu_count = omnitrace::gpu::device_count();
 
 // statically allocated shared_ptrs to prevent use after free errors
 auto timemory_manager      = tim::manager::master_instance();
@@ -508,7 +507,7 @@ main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-#if OMNITRACE_USE_HIP > 0
+#if OMNITRACE_USE_ROCM > 0
     if(gpu_count > 0)
     {
         size_t _num_metrics = 0;
@@ -516,7 +515,7 @@ main(int argc, char** argv)
         {
             // call to rocm_metrics() will add choices to OMNITRACE_ROCM_EVENTS setting
             // so always perform this call even if list of HW counters is not requested
-            _num_metrics = omnitrace::rocprofiler::rocm_metrics().size();
+            _num_metrics = omnitrace::rocm::rocm_events().size();
         } catch(std::runtime_error& _e)
         {
             verbprintf(0, "Retrieving the GPU HW counters failed: %s", _e.what());
@@ -615,9 +614,9 @@ main(int argc, char** argv)
         }
     }
 
-    signal(SIGABRT, &dump_log_abort);
-    signal(SIGSEGV, &dump_log_abort);
-    signal(SIGQUIT, &dump_log_abort);
+    // signal(SIGABRT, &dump_log_abort);
+    // signal(SIGSEGV, &dump_log_abort);
+    // signal(SIGQUIT, &dump_log_abort);
 
     if(!os) os = &std::cout;
 
@@ -1078,7 +1077,7 @@ write_hw_counter_info(std::ostream& os, const array_t<bool, N>& options,
 
     auto _papi_events = tim::papi::available_events_info();
     auto _rocm_events =
-        (gpu_count > 0) ? omnitrace::rocprofiler::rocm_metrics() : hwcounter_info_t{};
+        (gpu_count > 0) ? omnitrace::rocm::rocm_events() : hwcounter_info_t{};
 
     if(alphabetical)
     {

@@ -96,14 +96,6 @@ struct functors;
 }  // namespace component
 }  // namespace omnitrace
 
-#if !defined(OMNITRACE_USE_ROCTRACER)
-OMNITRACE_DEFINE_CONCRETE_TRAIT(is_available, component::roctracer, false_type)
-#endif
-
-#if !defined(OMNITRACE_USE_ROCPROFILER)
-OMNITRACE_DEFINE_CONCRETE_TRAIT(is_available, component::rocprofiler, false_type)
-#endif
-
 #if !defined(OMNITRACE_USE_RCCL)
 OMNITRACE_DEFINE_CONCRETE_TRAIT(is_available, category::rocm_rccl, false_type)
 OMNITRACE_DEFINE_CONCRETE_TRAIT(is_available, component::rcclp_handle, false_type)

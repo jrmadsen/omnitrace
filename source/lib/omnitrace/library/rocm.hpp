@@ -23,36 +23,40 @@
 #pragma once
 
 #include "core/defines.hpp"
+#include "core/timemory.hpp"
 
-#if defined(OMNITRACE_USE_ROCPROFILER) && OMNITRACE_USE_ROCPROFILER > 0
-#    include <rocprofiler.h>
+#if defined(OMNITRACE_USE_ROCPROFILER_SDK) && OMNITRACE_USE_ROCPROFILER_SDK > 0
+#    include <rocprofiler-sdk/registration.h>
+#    include <rocprofiler-sdk/rocprofiler.h>
 #endif
 
 #include <cstdint>
 #include <mutex>
+#include <vector>
 
 namespace omnitrace
 {
 namespace rocm
 {
-using lock_t = std::unique_lock<std::mutex>;
+using hardware_counter_info = ::tim::hardware_counters::info;
 
-extern std::mutex rocm_mutex;
-extern bool       is_loaded;
+std::vector<hardware_counter_info>
+rocm_events();
 }  // namespace rocm
 }  // namespace omnitrace
 
 extern "C"
 {
-    struct HsaApiTable;
-    using on_load_t = bool (*)(HsaApiTable*, uint64_t, uint64_t, const char* const*);
+    struct rocprofiler_tool_configure_result_t;
+    struct rocprofiler_client_id_t;
 
-    bool OnLoad(HsaApiTable* table, uint64_t runtime_version, uint64_t failed_tool_count,
-                const char* const* failed_tool_names) OMNITRACE_PUBLIC_API;
-    void OnUnload() OMNITRACE_PUBLIC_API;
+    using rocprofiler_configure_t =
+        rocprofiler_tool_configure_result_t* (*) (uint32_t    version,
+                                                  const char* runtime_version,
+                                                  uint32_t    priority,
+                                                  rocprofiler_client_id_t* client_id);
 
-#if defined(OMNITRACE_USE_ROCPROFILER) && OMNITRACE_USE_ROCPROFILER > 0
-    void OnLoadToolProp(rocprofiler_settings_t* settings) OMNITRACE_PUBLIC_API;
-    void OnUnloadTool() OMNITRACE_PUBLIC_API;
-#endif
+    rocprofiler_tool_configure_result_t* rocprofiler_configure(
+        uint32_t version, const char* runtime_version, uint32_t priority,
+        rocprofiler_client_id_t* client_id) OMNITRACE_PUBLIC_API;
 }

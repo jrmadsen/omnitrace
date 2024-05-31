@@ -42,10 +42,10 @@
 #define OMNITRACE_COMPILER_STRING  OMNITRACE_COMPILER_ID " v" OMNITRACE_COMPILER_VERSION
 
 #define OMNITRACE_DEFAULT_ROCM_PATH "@ROCmVersion_DIR@"
-#define OMNITRACE_HIP_VERSION_STRING "@OMNITRACE_HIP_VERSION@"
-#define OMNITRACE_HIP_VERSION_MAJOR @OMNITRACE_HIP_VERSION_MAJOR@
-#define OMNITRACE_HIP_VERSION_MINOR @OMNITRACE_HIP_VERSION_MINOR@
-#define OMNITRACE_HIP_VERSION_PATCH @OMNITRACE_HIP_VERSION_PATCH@
+#define OMNITRACE_ROCM_VERSION_STRING "@OMNITRACE_ROCM_VERSION@"
+#define OMNITRACE_ROCM_VERSION_MAJOR @OMNITRACE_ROCM_VERSION_MAJOR@
+#define OMNITRACE_ROCM_VERSION_MINOR @OMNITRACE_ROCM_VERSION_MINOR@
+#define OMNITRACE_ROCM_VERSION_PATCH @OMNITRACE_ROCM_VERSION_PATCH@
 
 // these can be set via defining the variable in CMake, e.g.:
 //      cmake -D OMNITRACE_CACHELINE_SIZE=N /path/to/source
@@ -63,15 +63,15 @@
     ((10000 * OMNITRACE_VERSION_MAJOR) + (100 * OMNITRACE_VERSION_MINOR) +               \
      OMNITRACE_VERSION_PATCH)
 
-#define OMNITRACE_HIP_VERSION                                                            \
-    ((10000 * OMNITRACE_HIP_VERSION_MAJOR) + (100 * OMNITRACE_HIP_VERSION_MINOR) +       \
-     OMNITRACE_HIP_VERSION_PATCH)
+#define OMNITRACE_ROCM_VERSION                                                           \
+    ((10000 * OMNITRACE_ROCM_VERSION_MAJOR) + (100 * OMNITRACE_ROCM_VERSION_MINOR) +     \
+     OMNITRACE_ROCM_VERSION_PATCH)
 
-#if OMNITRACE_HIP_VERSION_MAJOR > 0
-#    define OMNITRACE_HIP_VERSION_COMPAT_STRING                                          \
-        "v@OMNITRACE_HIP_VERSION_MAJOR@.@OMNITRACE_HIP_VERSION_MINOR@.x"
+#if OMNITRACE_ROCM_VERSION_MAJOR > 0
+#    define OMNITRACE_ROCM_VERSION_COMPAT_STRING                                         \
+        "v@OMNITRACE_ROCM_VERSION_MAJOR@.@OMNITRACE_ROCM_VERSION_MINOR@.x"
 #else
-#    define OMNITRACE_HIP_VERSION_COMPAT_STRING ""
+#    define OMNITRACE_ROCM_VERSION_COMPAT_STRING ""
 #endif
 
 // this should be passed to argparse::argument_parser::enable_version
@@ -83,7 +83,7 @@
         {                                                                                \
             { "", OMNITRACE_LIBRARY_ARCH }, { "compiler", OMNITRACE_COMPILER_STRING },   \
             {                                                                            \
-                "rocm", OMNITRACE_HIP_VERSION_COMPAT_STRING                              \
+                "rocm", OMNITRACE_ROCM_VERSION_COMPAT_STRING                             \
             }                                                                            \
         }
 #endif

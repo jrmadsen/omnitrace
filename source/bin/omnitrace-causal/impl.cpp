@@ -750,10 +750,6 @@ parse_args(int argc, char** argv, std::vector<char*>& _env,
 
     parser.end_group();
 
-#if OMNITRACE_HIP_VERSION > 0 && OMNITRACE_HIP_VERSION < 50300
-    update_env(_env, "HSA_ENABLE_INTERRUPT", 0);
-#endif
-
     auto _inpv = std::vector<char*>{};
     auto _outv = std::vector<char*>{};
     bool _hash = false;
@@ -822,9 +818,9 @@ parse_args(int argc, char** argv, std::vector<char*>& _env,
         add_default_env(_env, "OMNITRACE_USE_MPIP", true);
 #endif
 
-#if defined(OMNITRACE_USE_ROCTRACER) && OMNITRACE_USE_ROCTRACER > 0
-        add_default_env(_env, "OMNITRACE_ROCTRACER_HIP_API", true);
-        add_default_env(_env, "OMNITRACE_ROCTRACER_HSA_API", true);
+#if defined(OMNITRACE_USE_ROCPROFILER_SDK) && OMNITRACE_USE_ROCPROFILER_SDK > 0
+        add_default_env(_env, "OMNITRACE_ROCM_HIP_API", true);
+        add_default_env(_env, "OMNITRACE_ROCM_HSA_API", true);
 #endif
 
 #if defined(OMNITRACE_USE_RCCL) && OMNITRACE_USE_RCCL > 0

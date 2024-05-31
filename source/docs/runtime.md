@@ -183,7 +183,7 @@ OMNITRACE_TRACE                                    = true
 OMNITRACE_PROFILE                                  = false
 OMNITRACE_USE_SAMPLING                             = false
 OMNITRACE_USE_PROCESS_SAMPLING                     = true
-OMNITRACE_USE_ROCTRACER                            = true
+OMNITRACE_USE_ROCM                                 = true
 OMNITRACE_USE_ROCM_SMI                             = true
 OMNITRACE_USE_KOKKOSP                              = false
 OMNITRACE_USE_CODE_COVERAGE                        = false
@@ -343,7 +343,7 @@ $ omnitrace-avail -S -bd
 | OMNITRACE_TRACE                         | Enable perfetto backend                 |
 | OMNITRACE_USE_PID                       | Enable tagging filenames with proces... |
 | OMNITRACE_USE_ROCM_SMI                  | Enable sampling GPU power, temp, uti... |
-| OMNITRACE_USE_ROCTRACER                 | Enable ROCM tracing                     |
+| OMNITRACE_USE_ROCM                      | Enable ROCM tracing                     |
 | OMNITRACE_USE_SAMPLING                  | Enable statistical sampling of call-... |
 | OMNITRACE_USE_PROCESS_SAMPLING          | Enable a background thread which sam... |
 | OMNITRACE_PROFILE                       | Enable timemory backend                 |

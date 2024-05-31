@@ -23,13 +23,16 @@
 #pragma once
 
 #include "core/timemory.hpp"
+
 #include <memory>
+#include <vector>
+
 namespace omnitrace
 {
 namespace rocprofiler_sdk
 {
 void
-config_settings(const std::shared_ptr<tim::settings>&);
+config_settings(const std::shared_ptr<settings>&);
 
 void
 setup();

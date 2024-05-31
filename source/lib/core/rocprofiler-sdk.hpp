@@ -22,20 +22,16 @@
 
 #pragma once
 
+#include "core/timemory.hpp"
+
+#include <memory>
+#include <vector>
+
 namespace omnitrace
 {
-namespace gpu
+namespace rocprofiler_sdk
 {
-int
-device_count();
-
-int
-rocm_device_count();
-
-int
-rsmi_device_count();
-
 void
-add_device_metadata();
-}  // namespace gpu
+config_settings(const std::shared_ptr<settings>&);
+}  // namespace rocprofiler_sdk
 }  // namespace omnitrace

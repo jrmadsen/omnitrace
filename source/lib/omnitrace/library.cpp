@@ -46,13 +46,11 @@
 #include "library/components/mpi_gotcha.hpp"
 #include "library/components/numa_gotcha.hpp"
 #include "library/components/pthread_gotcha.hpp"
-#include "library/components/rocprofiler.hpp"
 #include "library/coverage.hpp"
 #include "library/ompt.hpp"
 #include "library/process_sampler.hpp"
 #include "library/ptl.hpp"
 #include "library/rcclp.hpp"
-#include "library/rocprofiler.hpp"
 #include "library/runtime.hpp"
 #include "library/sampling.hpp"
 #include "library/thread_data.hpp"
@@ -398,10 +396,6 @@ omnitrace_init_library_hidden()
         if(_debug_init) config::set_setting_value("OMNITRACE_DEBUG", _debug_value);
     } };
 
-    tim::trait::runtime_enabled<comp::roctracer>::set(get_use_roctracer());
-    tim::trait::runtime_enabled<comp::roctracer_data>::set(get_use_roctracer() &&
-                                                           get_use_timemory());
-
     OMNITRACE_CONDITIONAL_BASIC_PRINT_F(_debug_init, "\n");
 }
 
@@ -717,13 +711,6 @@ omnitrace_finalize_hidden(void)
         }
     }
 
-    if(get_use_roctracer())
-    {
-        OMNITRACE_VERBOSE_F(1, "Flushing roctracer...\n");
-        // ensure that roctracer is flushed before setting the state to finalized
-        comp::roctracer::flush();
-    }
-
     set_state(State::Finalized);
 
     push_enable_sampling_on_child_threads(false);
@@ -833,24 +820,6 @@ omnitrace_finalize_hidden(void)
         process_sampler::shutdown();
     }
 
-    if(get_use_roctracer())
-    {
-        OMNITRACE_VERBOSE_F(1, "Shutting down roctracer...\n");
-        // ensure that threads running roctracer callbacks shutdown
-        comp::roctracer::shutdown();
-
-        // join extra thread(s) used by roctracer
-        OMNITRACE_VERBOSE_F(2, "Waiting on roctracer tasks...\n");
-        tasking::join();
-    }
-
-    if(get_use_rocprofiler())
-    {
-        OMNITRACE_VERBOSE_F(1, "Shutting down rocprofiler...\n");
-        rocprofiler::post_process();
-        rocprofiler::rocm_cleanup();
-    }
-
     if(get_use_causal())
     {
         OMNITRACE_VERBOSE_F(1, "Shutting down causal sampling...\n");
@@ -917,7 +886,7 @@ omnitrace_finalize_hidden(void)
         process_sampler::post_process();
     }
 
-    // shutdown tasking before timemory is finalized, especially the roctracer thread-pool
+    // shutdown tasking before timemory is finalized
     OMNITRACE_VERBOSE_F(1, "Shutting down thread-pools...\n");
     tasking::shutdown();
 

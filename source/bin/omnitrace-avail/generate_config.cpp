@@ -339,9 +339,9 @@ generate_config(std::string _config_file, const std::set<std::string>& _config_f
                 for(const auto* itr :
                     { "OMNITRACE_CONFIG", "OMNITRACE_MODE", "OMNITRACE_TRACE",
                       "OMNITRACE_PROFILE", "OMNITRACE_USE_SAMPLING",
-                      "OMNITRACE_USE_PROCESS_SAMPLING", "OMNITRACE_USE_ROCTRACER",
-                      "OMNITRACE_USE_ROCM_SMI", "OMNITRACE_USE_KOKKOSP",
-                      "OMNITRACE_USE_OMPT", "OMNITRACE_USE", "OMNITRACE_OUTPUT" })
+                      "OMNITRACE_USE_PROCESS_SAMPLING", "OMNITRACE_USE_ROCM_SMI",
+                      "OMNITRACE_USE_KOKKOSP", "OMNITRACE_USE_OMPT", "OMNITRACE_USE",
+                      "OMNITRACE_OUTPUT" })
                 {
                     if(_lhs->get_env_name().find(itr) == 0 &&
                        _rhs->get_env_name().find(itr) != 0)

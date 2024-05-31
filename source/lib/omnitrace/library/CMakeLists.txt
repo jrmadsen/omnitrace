@@ -34,8 +34,9 @@ set(library_headers
 target_sources(omnitrace-object-library PRIVATE ${library_sources} ${library_headers})
 
 if(OMNITRACE_USE_ROCPROFILER_SDK)
-    target_sources(omnitrace-object-library
-                   PRIVATE ${CMAKE_CURRENT_LIST_DIR}/rocprofiler-sdk.cpp)
+    target_sources(
+        omnitrace-object-library PRIVATE ${CMAKE_CURRENT_LIST_DIR}/rocm.cpp
+                                         ${CMAKE_CURRENT_LIST_DIR}/rocprofiler-sdk.cpp)
 endif()
 
 if(OMNITRACE_USE_RCCL)

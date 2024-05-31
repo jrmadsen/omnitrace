@@ -222,17 +222,6 @@ init_parser(parser_data& _data)
     _data.dl_libpath   = get_realpath(get_internal_libpath("libomnitrace-dl.so").c_str());
     _data.omni_libpath = get_realpath(get_internal_libpath("libomnitrace.so").c_str());
 
-#if defined(OMNITRACE_USE_ROCTRACER) || defined(OMNITRACE_USE_ROCPROFILER)
-    update_env(_data, "HSA_TOOLS_LIB", _data.dl_libpath);
-    if(!getenv("HSA_TOOLS_REPORT_LOAD_FAILURE"))
-        update_env(_data, "HSA_TOOLS_REPORT_LOAD_FAILURE", "1");
-#endif
-
-#if defined(OMNITRACE_USE_ROCPROFILER)
-    update_env(_data, "ROCP_TOOL_LIB", _data.omni_libpath);
-    if(!getenv("ROCP_HSA_INTERCEPT")) update_env(_data, "ROCP_HSA_INTERCEPT", "1");
-#endif
-
 #if defined(OMNITRACE_USE_OMPT)
     if(!getenv("OMP_TOOL_LIBRARIES"))
         update_env(_data, "OMP_TOOL_LIBRARIES", _data.dl_libpath, UPD_PREPEND);
@@ -290,15 +279,6 @@ add_core_arguments(parser_t& _parser, parser_data& _data)
 %{INDENT}%  Values:
 %{INDENT}%    0     avoid triggering the bug, potentially at the cost of reduced performance
 %{INDENT}%    1     do not modify how ROCm is notified about kernel completion)";
-
-    auto _realtime_reqs =
-        (tim::get_env("HSA_ENABLE_INTERRUPT", std::string{}, false).empty())
-            ? strvec_t{ "hsa-interrupt" }
-            : strvec_t{};
-
-#if OMNITRACE_USE_ROCTRACER == 0 && OMNITRACE_USE_ROCPROFILER == 0
-    _realtime_reqs.clear();
-#endif
 
     const auto* _trace_policy_desc =
         R"(Policy for new data when the buffer size limit is reached:
@@ -574,13 +554,12 @@ add_core_arguments(parser_t& _parser, parser_data& _data)
     _backend_choices.erase("rocm-smi");
 #endif
 
-#if !defined(OMNITRACE_USE_ROCTRACER)
-    _backend_choices.erase("roctracer");
-    _backend_choices.erase("roctx");
+#if !defined(OMNITRACE_USE_ROCPROFILER_SDK)
+    _backend_choices.erase("rocprofiler-sdk");
 #endif
 
-#if !defined(OMNITRACE_USE_ROCPROFILER)
-    _backend_choices.erase("rocprofiler");
+#if !defined(OMNITRACE_USE_ROCM)
+    _backend_choices.erase("rocm");
 #endif
 
     if(gpu::device_count() == 0)
@@ -598,17 +577,16 @@ add_core_arguments(parser_t& _parser, parser_data& _data)
         update_env(_data, "OMNITRACE_USE_ROCM_SMI", false);
 #endif
 
-#if defined(OMNITRACE_USE_ROCTRACER)
-        update_env(_data, "OMNITRACE_USE_ROCTRACER", false);
+#if defined(OMNITRACE_USE_ROCPROFILER_SDK)
+        update_env(_data, "OMNITRACE_USE_ROCM", false);
         update_env(_data, "OMNITRACE_USE_ROCTX", false);
-        update_env(_data, "OMNITRACE_ROCTRACER_HSA_ACTIVITY", false);
-        update_env(_data, "OMNITRACE_ROCTRACER_HIP_ACTIVITY", false);
-        _backend_choices.erase("roctracer");
-        _backend_choices.erase("roctx");
+        update_env(_data, "OMNITRACE_ROCM_KERNEL_TRACE", false);
+        _backend_choices.erase("rocprofiler-sdk");
 #endif
 
-#if defined(OMNITRACE_USE_ROCPROFILER)
-        update_env(_data, "OMNITRACE_USE_ROCPROFILER", false);
+#if defined(OMNITRACE_USE_ROCM)
+        update_env(_data, "OMNITRACE_USE_ROCM", false);
+        _backend_choices.erase("rocm");
 #endif
     }
 
@@ -631,11 +609,10 @@ add_core_arguments(parser_t& _parser, parser_data& _data)
                 _update("OMNITRACE_USE_KOKKOSP", _v.count("kokkosp") > 0);
                 _update("OMNITRACE_USE_MPIP", _v.count("mpip") > 0);
                 _update("OMNITRACE_USE_OMPT", _v.count("ompt") > 0);
+                _update("OMNITRACE_USE_ROCM", _v.count("rocm") > 0);
                 _update("OMNITRACE_USE_RCCLP", _v.count("rcclp") > 0);
                 _update("OMNITRACE_USE_ROCTX", _v.count("roctx") > 0);
                 _update("OMNITRACE_USE_ROCM_SMI", _v.count("rocm-smi") > 0);
-                _update("OMNITRACE_USE_ROCTRACER", _v.count("roctracer") > 0);
-                _update("OMNITRACE_USE_ROCPROFILER", _v.count("rocprofiler") > 0);
                 _update("OMNITRACE_TRACE_THREAD_LOCKS", _v.count("mutex-locks") > 0);
                 _update("OMNITRACE_TRACE_THREAD_RW_LOCKS", _v.count("rw-locks") > 0);
                 _update("OMNITRACE_TRACE_THREAD_SPIN_LOCKS", _v.count("spin-locks") > 0);
@@ -667,11 +644,10 @@ add_core_arguments(parser_t& _parser, parser_data& _data)
                 _update("OMNITRACE_USE_KOKKOSP", _v.count("kokkosp") > 0);
                 _update("OMNITRACE_USE_MPIP", _v.count("mpip") > 0);
                 _update("OMNITRACE_USE_OMPT", _v.count("ompt") > 0);
+                _update("OMNITRACE_USE_ROCM", _v.count("rocm") > 0);
                 _update("OMNITRACE_USE_RCCLP", _v.count("rcclp") > 0);
                 _update("OMNITRACE_USE_ROCTX", _v.count("roctx") > 0);
                 _update("OMNITRACE_USE_ROCM_SMI", _v.count("rocm-smi") > 0);
-                _update("OMNITRACE_USE_ROCTRACER", _v.count("roctracer") > 0);
-                _update("OMNITRACE_USE_ROCPROFILER", _v.count("rocprofiler") > 0);
                 _update("OMNITRACE_TRACE_THREAD_LOCKS", _v.count("mutex-locks") > 0);
                 _update("OMNITRACE_TRACE_THREAD_RW_LOCKS", _v.count("rw-locks") > 0);
                 _update("OMNITRACE_TRACE_THREAD_SPIN_LOCKS", _v.count("spin-locks") > 0);
@@ -1117,7 +1093,6 @@ add_core_arguments(parser_t& _parser, parser_data& _data)
         _parser.add_argument({ "--sample-realtime" }, _realtime_desc)
             .min_count(0)
             .dtype("[freq] [delay] [tids...]")
-            .required(std::move(_realtime_reqs))
             .action([&](parser_t& p) {
                 auto _v = p.get<std::deque<std::string>>("sample-realtime");
                 update_env(_data, "OMNITRACE_SAMPLING_REALTIME", true);
