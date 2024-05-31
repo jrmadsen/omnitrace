@@ -53,12 +53,8 @@
 #    define OMNITRACE_USE_OMPT 0
 #endif
 
-#if !defined(OMNITRACE_USE_ROCTRACER)
-#    define OMNITRACE_USE_ROCTRACER 0
-#endif
-
-#if !defined(OMNITRACE_USE_ROCPROFILER)
-#    define OMNITRACE_USE_ROCPROFILER 0
+#if !defined(OMNITRACE_USE_ROCM)
+#    define OMNITRACE_USE_ROCM 0
 #endif
 
 //--------------------------------------------------------------------------------------//
@@ -176,18 +172,9 @@ extern "C"
                                               const char*) OMNITRACE_PUBLIC_API;
 #    endif
 
-#    if OMNITRACE_USE_ROCTRACER > 0
-    // HSA
-    struct HsaApiTable;
-    bool OnLoad(HsaApiTable* table, uint64_t runtime_version, uint64_t failed_tool_count,
-                const char* const* failed_tool_names) OMNITRACE_PUBLIC_API;
-    void OnUnload() OMNITRACE_PUBLIC_API;
-#    endif
-
-#    if OMNITRACE_USE_ROCPROFILER > 0
-    // ROCP
-    void OnLoadToolProp(void* settings) OMNITRACE_PUBLIC_API;
-    void OnUnloadTool() OMNITRACE_PUBLIC_API;
+#    if OMNITRACE_USE_ROCM > 0
+    struct rocprofiler_tool_configure_result_t;
+    struct rocprofiler_client_id_t;
 #    endif
 #endif
 }

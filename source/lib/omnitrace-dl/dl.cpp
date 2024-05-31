@@ -355,14 +355,9 @@ struct OMNITRACE_INTERNAL_API indirect
         OMNITRACE_DLSYM(kokkosp_dual_view_modify_f, m_omnihandle,
                         "kokkosp_dual_view_modify");
 
-#if OMNITRACE_USE_ROCTRACER > 0
-        OMNITRACE_DLSYM(hsa_on_load_f, m_omnihandle, "OnLoad");
-        OMNITRACE_DLSYM(hsa_on_unload_f, m_omnihandle, "OnUnload");
-#endif
+#if OMNITRACE_USE_ROCM > 0
+        OMNITRACE_DLSYM(rocprofiler_configure_f, m_omnihandle, "OnLoad");
 
-#if OMNITRACE_USE_ROCPROFILER > 0
-        OMNITRACE_DLSYM(rocp_on_load_tool_prop_f, m_omnihandle, "OnLoadToolProp");
-        OMNITRACE_DLSYM(rocp_on_unload_tool_f, m_omnihandle, "OnUnloadTool");
 #endif
 
 #if OMNITRACE_USE_OMPT == 0
@@ -455,16 +450,9 @@ public:
     void (*kokkosp_dual_view_sync_f)(const char*, const void* const, bool)    = nullptr;
     void (*kokkosp_dual_view_modify_f)(const char*, const void* const, bool)  = nullptr;
 
-    // HSA functions
-#if OMNITRACE_USE_ROCTRACER > 0
-    bool (*hsa_on_load_f)(HsaApiTable*, uint64_t, uint64_t, const char* const*) = nullptr;
-    void (*hsa_on_unload_f)()                                                   = nullptr;
-#endif
-
-    // ROCP functions
-#if OMNITRACE_USE_ROCPROFILER > 0
-    void (*rocp_on_load_tool_prop_f)(void* settings) = nullptr;
-    void (*rocp_on_unload_tool_f)()                  = nullptr;
+#if OMNITRACE_USE_ROCM > 0
+    rocprofiler_tool_configure_result_t* (*rocprofiler_configure_f)(
+        uint32_t, const char*, uint32_t, rocprofiler_client_id_t*) = nullptr;
 #endif
 
     // OpenMP functions
@@ -1062,42 +1050,17 @@ extern "C"
 
     //----------------------------------------------------------------------------------//
     //
-    //      HSA
+    //      ROCm
     //
     //----------------------------------------------------------------------------------//
 
-#if OMNITRACE_USE_ROCTRACER > 0
-    bool OnLoad(HsaApiTable* table, uint64_t runtime_version, uint64_t failed_tool_count,
-                const char* const* failed_tool_names)
+#if OMNITRACE_USE_ROCM > 0
+    rocprofiler_tool_configure_result_t* rocprofiler_configure(
+        uint32_t version, const char* runtime_version, uint32_t priority,
+        rocprofiler_client_id_t* client_id)
     {
-        return OMNITRACE_DL_INVOKE(get_indirect().hsa_on_load_f, table, runtime_version,
-                                   failed_tool_count, failed_tool_names);
-    }
-
-    void OnUnload() { return OMNITRACE_DL_INVOKE(get_indirect().hsa_on_unload_f); }
-#endif
-
-    //----------------------------------------------------------------------------------//
-    //
-    //      ROCP
-    //
-    //----------------------------------------------------------------------------------//
-
-#if OMNITRACE_USE_ROCPROFILER > 0
-    void OnLoadToolProp(void* settings)
-    {
-        OMNITRACE_DL_LOG(-16,
-                         "invoking %s(rocprofiler_settings_t*) within omnitrace-dl.so "
-                         "will cause a silent failure for rocprofiler. ROCP_TOOL_LIB "
-                         "should be set to libomnitrace.so\n",
-                         __FUNCTION__);
-        abort();
-        return OMNITRACE_DL_INVOKE(get_indirect().rocp_on_load_tool_prop_f, settings);
-    }
-
-    void OnUnloadTool()
-    {
-        return OMNITRACE_DL_INVOKE(get_indirect().rocp_on_unload_tool_f);
+        return OMNITRACE_DL_INVOKE(get_indirect().rocprofiler_configure_f, version,
+                                   runtime_version, priority, client_id);
     }
 #endif
 
