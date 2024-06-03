@@ -312,13 +312,24 @@ get_internal_basic_libs_impl()
                                            "liblzma.so" };
 
     // shared libraries used by omnitrace
-    const auto _omni_libs = strview_init_t{
-        "libstdc++.so.6",       "libgotcha.so",        "libunwind-coredump.so",
-        "libunwind-generic.so", "libunwind-ptrace.so", "libunwind-setjmp.so",
-        "libunwind.so",         "libunwind-x86_64.so", "librocm_smi64.so",
-        "libroctx64.so",        "librocmtools.so",     "libroctracer64.so",
-        "librocprofiler64.so",  "libpapi.so",          "libpfm.so"
-    };
+    const auto _omni_libs = strview_init_t{ "libstdc++.so.6",
+                                            "libgotcha.so",
+                                            "libunwind-coredump.so",
+                                            "libunwind-generic.so",
+                                            "libunwind-ptrace.so",
+                                            "libunwind-setjmp.so",
+                                            "libunwind.so",
+                                            "libunwind-x86_64.so",
+                                            "librocm_smi64.so",
+                                            "libroctx64.so",
+                                            "librocmtools.so",
+                                            "libroctracer64.so",
+                                            "librocprofiler64.so",
+                                            "libpapi.so",
+                                            "libpfm.so",
+                                            "librocprofiler-register.so",
+                                            "librocprofiler-sdk.so",
+                                            "librocprofiler-sdk-roctx.so" };
 
     // shared libraries potentially used by timemory
     const auto _3rdparty_libs = strview_init_t{ "libcaliper.so",
