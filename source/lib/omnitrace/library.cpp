@@ -26,6 +26,7 @@
 //
 #include "api.hpp"
 #include "common/setup.hpp"
+#include "common/static_object.hpp"
 #include "core/categories.hpp"
 #include "core/components/fwd.hpp"
 #include "core/concepts.hpp"
@@ -51,6 +52,7 @@
 #include "library/process_sampler.hpp"
 #include "library/ptl.hpp"
 #include "library/rcclp.hpp"
+#include "library/rocprofiler-sdk.hpp"
 #include "library/runtime.hpp"
 #include "library/sampling.hpp"
 #include "library/thread_data.hpp"
@@ -771,6 +773,14 @@ omnitrace_finalize_hidden(void)
         ompt::shutdown();
     }
 
+#if defined(OMNITRACE_USE_ROCM)
+    // TODO: option for rocm
+    {
+        OMNITRACE_VERBOSE_F(1, "Shutting down ROCm...\n");
+        rocprofiler_sdk::shutdown();
+    }
+#endif
+
     OMNITRACE_DEBUG_F("Stopping and destroying instrumentation bundles...\n");
     for(size_t i = 0; i < thread_info::get_peak_num_threads(); ++i)
     {
@@ -958,6 +968,8 @@ omnitrace_finalize_hidden(void)
     tim::signals::enable_signal_detection(
         { tim::signals::sys_signal::SegFault, tim::signals::sys_signal::Stop },
         [](int) {});
+
+    common::destroy_static_objects();
 }
 
 //======================================================================================//
