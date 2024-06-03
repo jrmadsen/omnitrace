@@ -31,12 +31,8 @@
 
 #include "common/defines.h"
 
-#if !defined(OMNITRACE_USE_ROCM_SMI)
-#    define OMNITRACE_USE_ROCM_SMI 0
-#endif
-
-#if !defined(OMNITRACE_USE_ROCPROFILER_SDK)
-#    define OMNITRACE_USE_ROCPROFILER_SDK 0
+#if !defined(OMNITRACE_USE_ROCM)
+#    define OMNITRACE_USE_ROCM 0
 #endif
 
 #include "debug.hpp"
@@ -45,11 +41,8 @@
 
 #include <timemory/manager.hpp>
 
-#if OMNITRACE_USE_ROCM_SMI > 0
+#if OMNITRACE_USE_ROCM > 0
 #    include <rocm_smi/rocm_smi.h>
-#endif
-
-#if OMNITRACE_USE_ROCPROFILER_SDK > 0
 #    include <rocprofiler-sdk/agent.h>
 #    include <rocprofiler-sdk/cxx/serialization.hpp>
 #    include <rocprofiler-sdk/fwd.h>
@@ -61,7 +54,7 @@ namespace gpu
 {
 namespace
 {
-#if OMNITRACE_USE_ROCM_SMI > 0
+#if OMNITRACE_USE_ROCM > 0
 #    define OMNITRACE_ROCM_SMI_CALL(ERROR_CODE)                                          \
         ::omnitrace::gpu::check_rsmi_error(ERROR_CODE, __FILE__, __LINE__)
 
@@ -103,7 +96,7 @@ int32_t
 query_rocm_gpu_agents()
 {
     int32_t _dev_cnt = 0;
-#if OMNITRACE_USE_ROCPROFILER_SDK > 0
+#if OMNITRACE_USE_ROCM > 0
     auto iterator = [](rocprofiler_agent_version_t /*version*/, const void** agents,
                        size_t num_agents, void* user_data) -> rocprofiler_status_t {
         auto* _cnt = static_cast<int32_t*>(user_data);
@@ -124,7 +117,7 @@ query_rocm_gpu_agents()
 int
 rocm_device_count()
 {
-#if OMNITRACE_USE_ROCPROFILER_SDK > 0
+#if OMNITRACE_USE_ROCM > 0
     static int _num_devices = query_rocm_gpu_agents();
     return _num_devices;
 #else
@@ -135,7 +128,7 @@ rocm_device_count()
 int
 rsmi_device_count()
 {
-#if OMNITRACE_USE_ROCM_SMI > 0
+#if OMNITRACE_USE_ROCM > 0
     if(!rsmi_init()) return 0;
 
     static auto _num_devices = []() {
@@ -160,11 +153,8 @@ rsmi_device_count()
 int
 device_count()
 {
-#if OMNITRACE_USE_ROCPROFILER_SDK > 0
+#if OMNITRACE_USE_ROCM > 0
     return rocm_device_count();
-#elif OMNITRACE_USE_ROCM_SMI > 0
-    // store as static since calls after rsmi_shutdown will return zero
-    return rsmi_device_count();
 #else
     return 0;
 #endif
@@ -177,7 +167,7 @@ add_device_metadata(ArchiveT& ar)
     namespace cereal = tim::cereal;
     using cereal::make_nvp;
 
-#if OMNITRACE_USE_ROCPROFILER_SDK > 0
+#if OMNITRACE_USE_ROCM > 0
     using agent_vec_t = std::vector<rocprofiler_agent_v0_t>;
 
     auto _agents_vec = agent_vec_t{};

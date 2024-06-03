@@ -116,7 +116,7 @@ OMNITRACE_DEFINE_CONCRETE_TRAIT(is_available, component::sampling_cpu_clock, fal
 OMNITRACE_DEFINE_CONCRETE_TRAIT(is_available, component::sampling_percent, false_type)
 #endif
 
-#if !defined(TIMEMORY_USE_LIBUNWIND) || !defined(OMNITRACE_USE_ROCM_SMI)
+#if !defined(TIMEMORY_USE_LIBUNWIND) || !defined(OMNITRACE_USE_ROCM)
 OMNITRACE_DEFINE_CONCRETE_TRAIT(is_available, component::sampling_gpu_busy, false_type)
 OMNITRACE_DEFINE_CONCRETE_TRAIT(is_available, component::sampling_gpu_temp, false_type)
 OMNITRACE_DEFINE_CONCRETE_TRAIT(is_available, component::sampling_gpu_power, false_type)

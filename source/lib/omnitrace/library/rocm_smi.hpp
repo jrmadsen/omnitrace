@@ -128,7 +128,7 @@ private:
     static bool                          shutdown();
 };
 
-#if !defined(OMNITRACE_USE_ROCM_SMI)
+#if !defined(OMNITRACE_USE_ROCM) || OMNITRACE_USE_ROCM == 0
 inline void
 setup()
 {}
@@ -154,7 +154,7 @@ inline void set_state(State) {}
 }  // namespace rocm_smi
 }  // namespace omnitrace
 
-#if defined(OMNITRACE_USE_ROCM_SMI) && OMNITRACE_USE_ROCM_SMI > 0
+#if defined(OMNITRACE_USE_ROCM) && OMNITRACE_USE_ROCM > 0
 #    if !defined(OMNITRACE_EXTERN_COMPONENTS) ||                                         \
         (defined(OMNITRACE_EXTERN_COMPONENTS) && OMNITRACE_EXTERN_COMPONENTS > 0)
 

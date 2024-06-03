@@ -25,7 +25,7 @@
 #include "core/defines.hpp"
 #include "core/timemory.hpp"
 
-#if defined(OMNITRACE_USE_ROCPROFILER_SDK) && OMNITRACE_USE_ROCPROFILER_SDK > 0
+#if defined(OMNITRACE_USE_ROCM) && OMNITRACE_USE_ROCM > 0
 #    include <rocprofiler-sdk/registration.h>
 #    include <rocprofiler-sdk/rocprofiler.h>
 #endif

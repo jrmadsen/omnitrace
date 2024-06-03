@@ -41,7 +41,7 @@
 #include <mutex>
 #include <tuple>
 
-#if defined(OMNITRACE_USE_ROCPROFILER_SDK) && OMNITRACE_USE_ROCPROFILER_SDK > 0
+#if defined(OMNITRACE_USE_ROCM) && OMNITRACE_USE_ROCM > 0
 #    include <rocprofiler-sdk/rocprofiler.h>
 #endif
 
