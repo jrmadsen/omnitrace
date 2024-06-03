@@ -32,12 +32,15 @@ namespace omnitrace
 namespace rocprofiler_sdk
 {
 void
-config_settings(const std::shared_ptr<settings>&);
-
-void
 setup();
 
 void
 shutdown();
+
+void
+start();
+
+void
+stop();
 }  // namespace rocprofiler_sdk
 }  // namespace omnitrace

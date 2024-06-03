@@ -285,10 +285,8 @@ tool_tracing_buffered(rocprofiler_context_id_t /*context*/,
                 if(get_use_perfetto())
                 {
                     auto _track_desc = [](int32_t _device_id_v, int64_t _queue_id_v) {
-                        if(config::get_perfetto_roctracer_per_stream())
-                            return JOIN("", "ROCm GPU Activity Device ", _device_id_v,
-                                        ", Queue ", _queue_id_v);
-                        return JOIN("", "ROCm GPU Activity Device ", _device_id_v);
+                        return JOIN("", "ROCm GPU Activity Device ", _device_id_v,
+                                    ", Queue ", _queue_id_v);
                     };
 
                     const auto _track =
@@ -425,24 +423,6 @@ is_active(rocprofiler_context_id_t ctx)
 }
 
 void
-start()
-{
-    if(!is_active(rocp_ctx))
-    {
-        ROCPROFILER_CALL(rocprofiler_start_context(rocp_ctx));
-    }
-}
-
-void
-stop()
-{
-    if(is_active(rocp_ctx))
-    {
-        ROCPROFILER_CALL(rocprofiler_stop_context(rocp_ctx));
-    }
-}
-
-void
 flush()
 {
     for(auto* itr : buffers)
@@ -573,52 +553,11 @@ tool_fini(void* /*tool_data*/)
 
     std::cerr << "[" << getpid() << "][" << __FUNCTION__ << "] Finalization complete.\n"
               << std::flush;
+
+    rocp_id   = nullptr;
+    rocp_fini = nullptr;
 }
 }  // namespace
-
-void
-config_settings(const std::shared_ptr<settings>& _config)
-{
-    const auto _skip_domains =
-        std::unordered_set<std::string_view>{ "marker_core_api", "marker_control_api",
-                                              "marker_name_api" };
-    auto _domain_choices = std::vector<std::string>{};
-    auto _add_domain     = [&_domain_choices, &_skip_domains](std::string_view _domain) {
-        auto _v = std::string{ _domain };
-        for(auto& itr : _v)
-            itr = ::tolower(itr);
-
-        if(_skip_domains.count(_v) == 0)
-        {
-            auto itr = std::find(_domain_choices.begin(), _domain_choices.end(), _v);
-            if(itr == _domain_choices.end()) _domain_choices.emplace_back(_v);
-        }
-    };
-
-    _domain_choices.reserve(buffered_tracing_info.size());
-    _domain_choices.reserve(callback_tracing_info.size());
-    _add_domain("hip_api");
-    _add_domain("hsa_api");
-
-    for(const auto& itr : buffered_tracing_info)
-        _add_domain(itr.name);
-
-    for(const auto& itr : callback_tracing_info)
-        _add_domain(itr.name);
-
-    OMNITRACE_CONFIG_SETTING(
-        std::string, "OMNITRACE_ROCM_DOMAINS",
-        "Specification of ROCm domains to trace/profile",
-        std::string{ "hip,kernels,marker,scratch_memory,page_migration" }, "rocm")
-        ->set_choices(_domain_choices);
-
-    OMNITRACE_CONFIG_SETTING(
-        std::string, "OMNITRACE_ROCM_EVENTS",
-        "ROCm hardware counters. Use ':device=N' syntax to specify collection on device "
-        "number N, e.g. ':device=0'. If no device specification is provided, the event "
-        "is collected on every available device",
-        "", "rocm", "hardware_counters");
-}
 
 void
 setup()
@@ -634,6 +573,25 @@ void
 shutdown()
 {
     // shutdown
+    if(rocp_id && rocp_fini) rocp_fini(*rocp_id);
+}
+
+void
+start()
+{
+    if(!is_active(rocp_ctx))
+    {
+        ROCPROFILER_CALL(rocprofiler_start_context(rocp_ctx));
+    }
+}
+
+void
+stop()
+{
+    if(is_active(rocp_ctx))
+    {
+        ROCPROFILER_CALL(rocprofiler_stop_context(rocp_ctx));
+    }
 }
 }  // namespace rocprofiler_sdk
 }  // namespace omnitrace
