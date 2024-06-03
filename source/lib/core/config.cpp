@@ -22,6 +22,7 @@
 
 #include "config.hpp"
 #include "common/defines.h"
+#include "common/static_object.hpp"
 #include "config_groups.hpp"
 #include "constraint.hpp"
 #include "debug.hpp"
@@ -70,6 +71,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <unistd.h>
 #include <utility>
 
@@ -79,10 +81,23 @@ using settings = tim::settings;
 
 namespace
 {
+int  verbose_value  = tim::get_env<int>("OMNITRACE_VERBOSE", 0, false);
+bool debug_value    = tim::get_env<bool>("OMNITRACE_DEBUG", false, false);
+bool is_ci_value    = tim::get_env<bool>("OMNITRACE_CI", false, false);
+auto configure_once = std::once_flag{};
+
 TIMEMORY_NOINLINE bool&
 _settings_are_configured()
 {
     static bool _v = false;
+    return _v;
+}
+
+auto*&
+get_config_impl()
+{
+    static auto*& _v = common::static_object<std::shared_ptr<settings>>::construct(
+        common::do_not_destroy{}, settings::shared_instance());
     return _v;
 }
 
@@ -197,7 +212,7 @@ configure_settings(bool _init)
 
     if(settings_are_configured()) return;
 
-    if(get_is_continuous_integration() && get_state() < State::Init)
+    if(is_ci_value && get_state() < State::Init)
     {
         timemory_print_demangled_backtrace<64>();
         OMNITRACE_THROW("config::configure_settings() called before "
@@ -230,7 +245,7 @@ configure_settings(bool _init)
                                OMNITRACE_ROCM_VERSION_PATCH);
 #endif
 
-    auto _config = settings::shared_instance();
+    auto _config = *get_config_impl();
 
     // if using timemory, default to perfetto being off
     auto _default_perfetto_v = !tim::get_env<bool>("OMNITRACE_PROFILE", false, false);
@@ -981,6 +996,10 @@ configure_settings(bool _init)
 
     settings::suppress_config() = true;
 
+    if(auto opt = get_setting_value<int>("OMNITRACE_VERBOSE"); opt) verbose_value = *opt;
+    if(auto opt = get_setting_value<bool>("OMNITRACE_DEBUG"); opt) debug_value = *opt;
+    if(auto opt = get_setting_value<bool>("OMNITRACE_CI"); opt) is_ci_value = *opt;
+
     if(get_env("OMNITRACE_MONOCHROME", _config->get<bool>("OMNITRACE_MONOCHROME")))
         tim::log::monochrome() = true;
 
@@ -1041,6 +1060,10 @@ configure_settings(bool _init)
     configure_disabled_settings(_config);
 
     OMNITRACE_BASIC_VERBOSE(2, "configuration complete\n");
+
+    if(auto opt = get_setting_value<int>("OMNITRACE_VERBOSE"); opt) verbose_value = *opt;
+    if(auto opt = get_setting_value<bool>("OMNITRACE_DEBUG"); opt) debug_value = *opt;
+    if(auto opt = get_setting_value<bool>("OMNITRACE_CI"); opt) is_ci_value = *opt;
 
     _settings_are_configured() = true;
 }
@@ -1323,7 +1346,7 @@ configure_disabled_settings(const std::shared_ptr<settings>& _config)
     _handle_use_option("OMNITRACE_USE_ROCM_SMI", "rocm_smi");
     _handle_use_option("OMNITRACE_USE_ROCM", "rocm");
 
-#if !defined(OMNITRACE_USE_ROCM_SMI) || OMNITRACE_USE_ROCM_SMI == 0
+#if !defined(OMNITRACE_USE_ROCM) || OMNITRACE_USE_ROCM == 0
     _config->find("OMNITRACE_USE_ROCM_SMI")->second->set_hidden(true);
     for(const auto& itr : _config->disable_category("rocm_smi"))
         _config->find(itr)->second->set_hidden(true);
@@ -1717,10 +1740,7 @@ get_debug_env()
 bool
 get_is_continuous_integration()
 {
-    if(!settings_are_configured())
-        return tim::get_env<bool>("OMNITRACE_CI", false, false);
-    static auto _v = get_config()->find("OMNITRACE_CI");
-    return static_cast<tim::tsettings<bool>&>(*_v->second).get();
+    return is_ci_value;
 }
 
 bool
@@ -1738,8 +1758,8 @@ get_debug_finalize()
 bool
 get_debug()
 {
-    static auto _v = get_config()->find("OMNITRACE_DEBUG");
-    return static_cast<tim::tsettings<bool>&>(*_v->second).get();
+    std::call_once(configure_once, []() { (void) get_config(); });
+    return debug_value;
 }
 
 bool
@@ -1761,15 +1781,15 @@ get_verbose_env()
 int
 get_verbose()
 {
-    static auto _v = get_config()->find("OMNITRACE_VERBOSE");
-    return static_cast<tim::tsettings<int>&>(*_v->second).get();
+    std::call_once(configure_once, []() { (void) get_config(); });
+    return verbose_value;
 }
 
 bool&
 get_use_perfetto()
 {
-    static auto _v = get_config()->find("OMNITRACE_TRACE");
-    return static_cast<tim::tsettings<bool>&>(*_v->second).get();
+    static auto _v = get_config()->at("OMNITRACE_TRACE");
+    return static_cast<tim::tsettings<bool>&>(*_v).get();
 }
 
 bool&
@@ -1789,7 +1809,7 @@ get_use_causal()
 bool
 get_use_rocm_smi()
 {
-#if defined(OMNITRACE_USE_ROCM_SMI) && OMNITRACE_USE_ROCM_SMI > 0
+#if defined(OMNITRACE_USE_ROCM) && OMNITRACE_USE_ROCM > 0
     static auto _v = get_config()->find("OMNITRACE_USE_ROCM_SMI");
     return static_cast<tim::tsettings<bool>&>(*_v->second).get();
 #else
@@ -2205,7 +2225,7 @@ get_process_sampling_duration()
 std::string
 get_sampling_gpus()
 {
-#if defined(OMNITRACE_USE_ROCM_SMI) && OMNITRACE_USE_ROCM_SMI > 0
+#if defined(OMNITRACE_USE_ROCM) && OMNITRACE_USE_ROCM > 0
     static auto _v = get_config()->find("OMNITRACE_SAMPLING_GPUS");
     return static_cast<tim::tsettings<std::string>&>(*_v->second).get();
 #else

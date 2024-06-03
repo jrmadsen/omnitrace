@@ -264,9 +264,6 @@ get_perfetto_backend();
 std::string
 get_perfetto_output_filename();
 
-bool
-get_perfetto_roctracer_per_stream() OMNITRACE_HOT;
-
 double
 get_trace_delay();
 
