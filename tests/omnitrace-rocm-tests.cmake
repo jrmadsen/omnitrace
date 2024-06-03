@@ -26,7 +26,8 @@ omnitrace_add_test(
         args
         -E
         uniform_int_distribution
-    ENVIRONMENT "${_base_environment}")
+    ENVIRONMENT "${_base_environment}"
+    RUNTIME_TIMEOUT 480)
 
 omnitrace_add_test(
     SKIP_REWRITE SKIP_RUNTIME
@@ -36,9 +37,7 @@ omnitrace_add_test(
     GPU ON
     NUM_PROCS 1
     RUN_ARGS 1 2 2
-    ENVIRONMENT
-        "${_base_environment};OMNITRACE_ROCTRACER_HSA_ACTIVITY=OFF;OMNITRACE_ROCTRACER_HSA_API=OFF"
-    )
+    ENVIRONMENT "${_base_environment}")
 
 omnitrace_add_test(
     SKIP_BASELINE SKIP_RUNTIME
@@ -64,7 +63,7 @@ omnitrace_add_test(
     ENVIRONMENT "${_base_environment}"
     REWRITE_FAIL_REGEX "0 instrumented loops in procedure transpose")
 
-if(OMNITRACE_USE_ROCPROFILER_SDK)
+if(OMNITRACE_USE_ROCM)
     omnitrace_add_test(
         SKIP_BASELINE SKIP_RUNTIME
         NAME transpose-rocprofiler
