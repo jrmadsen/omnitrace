@@ -25,7 +25,7 @@
 #include "core/debug.hpp"
 #include "timemory.hpp"
 
-#if defined(OMNITRACE_USE_ROCPROFILER_SDK) && OMNITRACE_USE_ROCPROFILER_SDK > 0
+#if defined(OMNITRACE_USE_ROCM) && OMNITRACE_USE_ROCM > 0
 
 #    include <timemory/defines.h>
 #    include <timemory/utility/demangle.hpp>
@@ -128,7 +128,9 @@ config_settings(const std::shared_ptr<settings>& _config)
     OMNITRACE_CONFIG_SETTING(
         std::string, "OMNITRACE_ROCM_DOMAINS",
         "Specification of ROCm domains to trace/profile",
-        std::string{ "hip,kernels,marker,scratch_memory,page_migration" }, "rocm")
+        std::string{
+            "hip_runtime,marker_core,kernels,memory_copy,scratch_memory,page_migration" },
+        "rocm", "rocprofiler-sdk")
         ->set_choices(_domain_choices);
 
     OMNITRACE_CONFIG_SETTING(
