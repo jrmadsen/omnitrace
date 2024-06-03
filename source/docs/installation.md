@@ -199,8 +199,8 @@ spack load -r dyninst
 
 ### Installing omnitrace
 
-OmniTrace has cmake configuration options for supporting MPI (`OMNITRACE_USE_MPI` or `OMNITRACE_USE_MPI_HEADERS`), ROCm tracing (`OMNITRACE_USE_ROCM`),
-sampling ROCm devices (`OMNITRACE_USE_ROCM_SMI`), OpenMP-Tools (`OMNITRACE_USE_OMPT`), hardware counters via PAPI (`OMNITRACE_USE_PAPI`), among others.
+OmniTrace has cmake configuration options for supporting MPI (`OMNITRACE_USE_MPI` or `OMNITRACE_USE_MPI_HEADERS`),
+ROCm tracing and sampling ROCm device (`OMNITRACE_USE_ROCM`), OpenMP-Tools (`OMNITRACE_USE_OMPT`), hardware counters via PAPI (`OMNITRACE_USE_PAPI`), among others.
 Various additional features can be enabled via the [`TIMEMORY_USE_*` CMake options](https://timemory.readthedocs.io/en/develop/installation.html#cmake-options).
 Any `OMNITRACE_USE_<VAL>` option which has a corresponding `TIMEMORY_USE_<VAL>` option means that the support within timemory for this feature has been integrated
 into omnitrace's perfetto support, e.g. `OMNITRACE_USE_PAPI=<VAL>` forces `TIMEMORY_USE_PAPI=<VAL>` and the data that timemory is able to collect via this package

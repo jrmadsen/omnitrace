@@ -550,15 +550,9 @@ add_core_arguments(parser_t& _parser, parser_data& _data)
     _backend_choices.erase("rcclp");
 #endif
 
-#if !defined(OMNITRACE_USE_ROCM_SMI)
-    _backend_choices.erase("rocm-smi");
-#endif
-
-#if !defined(OMNITRACE_USE_ROCPROFILER_SDK)
-    _backend_choices.erase("rocprofiler-sdk");
-#endif
-
 #if !defined(OMNITRACE_USE_ROCM)
+    _backend_choices.erase("rocm-smi");
+    _backend_choices.erase("rocprofiler-sdk");
     _backend_choices.erase("rocm");
 #endif
 
@@ -566,26 +560,20 @@ add_core_arguments(parser_t& _parser, parser_data& _data)
     {
         _backend_choices.erase("rcclp");
         _backend_choices.erase("rocm-smi");
-        _backend_choices.erase("roctracer");
-        _backend_choices.erase("rocprofiler");
 
 #if defined(OMNITRACE_USE_RCCL)
         update_env(_data, "OMNITRACE_USE_RCCLP", false);
 #endif
 
-#if defined(OMNITRACE_USE_ROCM_SMI)
+#if defined(OMNITRACE_USE_ROCM)
         update_env(_data, "OMNITRACE_USE_ROCM_SMI", false);
-#endif
-
-#if defined(OMNITRACE_USE_ROCPROFILER_SDK)
         update_env(_data, "OMNITRACE_USE_ROCM", false);
         update_env(_data, "OMNITRACE_USE_ROCTX", false);
         update_env(_data, "OMNITRACE_ROCM_KERNEL_TRACE", false);
-        _backend_choices.erase("rocprofiler-sdk");
-#endif
-
-#if defined(OMNITRACE_USE_ROCM)
         update_env(_data, "OMNITRACE_USE_ROCM", false);
+
+        _backend_choices.erase("rocm-smi");
+        _backend_choices.erase("rocprofiler-sdk");
         _backend_choices.erase("rocm");
 #endif
     }

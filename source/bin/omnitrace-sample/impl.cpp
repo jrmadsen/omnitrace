@@ -719,14 +719,9 @@ parse_args(int argc, char** argv, std::vector<char*>& _env)
     _backend_choices.erase("rcclp");
 #endif
 
-#if !defined(OMNITRACE_USE_ROCM_SMI)
-    _backend_choices.erase("rocm-smi");
-#endif
-#if !defined(OMNITRACE_USE_ROCPROFILER_SDK)
-    _backend_choices.erase("rocprofiler-sdk");
-#endif
-
 #if !defined(OMNITRACE_USE_ROCM)
+    _backend_choices.erase("rocm-smi");
+    _backend_choices.erase("rocprofiler-sdk");
     _backend_choices.erase("rocm");
 #endif
 

@@ -15,10 +15,6 @@ omnitrace_add_interface_library(
     "Provides flags and libraries for Dyninst (dynamic instrumentation)")
 omnitrace_add_interface_library(omnitrace-rocm
                                 "Provides flags and libraries for rocm-smi")
-omnitrace_add_interface_library(omnitrace-rocm-smi
-                                "Provides flags and libraries for rocm-smi")
-omnitrace_add_interface_library(omnitrace-rocprofiler-sdk
-                                "Provides flags and libraries for rocprofiler-sdk")
 omnitrace_add_interface_library(
     omnitrace-rccl "Provides flags for ROCm Communication Collectives Library (RCCL)")
 omnitrace_add_interface_library(omnitrace-mpi "Provides MPI or MPI headers")
@@ -37,16 +33,9 @@ omnitrace_add_interface_library(omnitrace-tomlplusplus "Provides toml++")
 
 # libraries with relevant compile definitions
 set(OMNITRACE_EXTENSION_LIBRARIES
-    omnitrace::omnitrace-rocm
-    omnitrace::omnitrace-rocm-smi
-    omnitrace::omnitrace-rocprofiler-sdk
-    omnitrace::omnitrace-rccl
-    omnitrace::omnitrace-bfd
-    omnitrace::omnitrace-mpi
-    omnitrace::omnitrace-ptl
-    omnitrace::omnitrace-ompt
-    omnitrace::omnitrace-papi
-    omnitrace::omnitrace-perfetto)
+    omnitrace::omnitrace-rocm omnitrace::omnitrace-rccl omnitrace::omnitrace-bfd
+    omnitrace::omnitrace-mpi omnitrace::omnitrace-ptl omnitrace::omnitrace-ompt
+    omnitrace::omnitrace-papi omnitrace::omnitrace-perfetto)
 
 target_include_directories(
     omnitrace-headers
@@ -115,9 +104,7 @@ endforeach()
 #
 # ----------------------------------------------------------------------------------------#
 
-if(OMNITRACE_USE_ROCM
-   OR OMNITRACE_USE_ROCPROFILER_SDK
-   OR OMNITRACE_USE_ROCM_SMI)
+if(OMNITRACE_USE_ROCM)
     find_package(ROCmVersion)
 
     if(NOT ROCmVersion_FOUND)
@@ -170,29 +157,17 @@ endif()
 
 # ----------------------------------------------------------------------------------------#
 #
-# rocm-smi
+# rocm (rocprofiler-sdk, rocm-smi)
 #
 # ----------------------------------------------------------------------------------------#
 
-if(OMNITRACE_USE_ROCM_SMI)
-    find_package(rocm-smi ${omnitrace_FIND_QUIETLY} REQUIRED)
-    omnitrace_target_compile_definitions(omnitrace-rocm-smi
-                                         INTERFACE OMNITRACE_USE_ROCM_SMI)
-    target_link_libraries(omnitrace-rocm-smi INTERFACE rocm-smi::rocm-smi)
-endif()
-
-# ----------------------------------------------------------------------------------------#
-#
-# rocprofiler-sdk
-#
-# ----------------------------------------------------------------------------------------#
-
-if(OMNITRACE_USE_ROCPROFILER_SDK)
+if(OMNITRACE_USE_ROCM)
     find_package(rocprofiler-sdk ${omnitrace_FIND_QUIETLY} REQUIRED)
-    omnitrace_target_compile_definitions(omnitrace-rocprofiler-sdk
-                                         INTERFACE OMNITRACE_USE_ROCPROFILER_SDK)
-    target_link_libraries(omnitrace-rocprofiler-sdk
-                          INTERFACE rocprofiler-sdk::rocprofiler-sdk)
+    omnitrace_target_compile_definitions(omnitrace-rocm INTERFACE OMNITRACE_USE_ROCM)
+    target_link_libraries(omnitrace-rocm INTERFACE rocprofiler-sdk::rocprofiler-sdk)
+
+    find_package(rocm-smi ${omnitrace_FIND_QUIETLY} REQUIRED)
+    target_link_libraries(omnitrace-rocm INTERFACE rocm-smi::rocm-smi)
 endif()
 
 # ----------------------------------------------------------------------------------------#
@@ -205,19 +180,6 @@ if(OMNITRACE_USE_RCCL)
     find_package(RCCL-Headers ${omnitrace_FIND_QUIETLY} REQUIRED)
     target_link_libraries(omnitrace-rccl INTERFACE roc::rccl-headers)
     omnitrace_target_compile_definitions(omnitrace-rccl INTERFACE OMNITRACE_USE_RCCL)
-endif()
-
-# ----------------------------------------------------------------------------------------#
-#
-# ROCm
-#
-# ----------------------------------------------------------------------------------------#
-
-if(OMNITRACE_USE_ROCM
-   AND (OMNITRACE_USE_ROCM_SMI
-        OR OMNITRACE_USE_ROCPROFILER_SDK
-        OR OMNITRACE_USE_RCCL))
-    omnitrace_target_compile_definitions(omnitrace-rocm INTERFACE OMNITRACE_USE_ROCM)
 endif()
 
 # ----------------------------------------------------------------------------------------#

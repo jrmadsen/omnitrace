@@ -33,19 +33,16 @@ set(library_headers
 
 target_sources(omnitrace-object-library PRIVATE ${library_sources} ${library_headers})
 
-if(OMNITRACE_USE_ROCPROFILER_SDK)
+if(OMNITRACE_USE_ROCM)
     target_sources(
-        omnitrace-object-library PRIVATE ${CMAKE_CURRENT_LIST_DIR}/rocm.cpp
-                                         ${CMAKE_CURRENT_LIST_DIR}/rocprofiler-sdk.cpp)
+        omnitrace-object-library
+        PRIVATE ${CMAKE_CURRENT_LIST_DIR}/rocm.cpp
+                ${CMAKE_CURRENT_LIST_DIR}/rocprofiler-sdk.cpp
+                ${CMAKE_CURRENT_LIST_DIR}/rocm_smi.cpp)
 endif()
 
 if(OMNITRACE_USE_RCCL)
     target_sources(omnitrace-object-library PRIVATE ${CMAKE_CURRENT_LIST_DIR}/rcclp.cpp)
-endif()
-
-if(OMNITRACE_USE_ROCM_SMI)
-    target_sources(omnitrace-object-library
-                   PRIVATE ${CMAKE_CURRENT_LIST_DIR}/rocm_smi.cpp)
 endif()
 
 add_subdirectory(causal)

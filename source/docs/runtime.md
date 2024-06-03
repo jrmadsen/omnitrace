@@ -203,9 +203,6 @@ OMNITRACE_PERFETTO_COMBINE_TRACES                  = false
 OMNITRACE_PERFETTO_FILE                            = perfetto-trace.proto
 OMNITRACE_PERFETTO_FILL_POLICY                     = discard
 OMNITRACE_PERFETTO_SHMEM_SIZE_HINT_KB              = 4096
-OMNITRACE_ROCTRACER_HSA_ACTIVITY                   = false
-OMNITRACE_ROCTRACER_HSA_API                        = false
-OMNITRACE_ROCTRACER_HSA_API_TYPES                  =
 OMNITRACE_SAMPLING_CPUS                            =
 OMNITRACE_SAMPLING_DELAY                           = 0.5
 OMNITRACE_SAMPLING_FREQ                            = 10
@@ -315,9 +312,6 @@ $ omnitrace-avail -S -bd
 | OMNITRACE_PERFETTO_FILL_POLICY          | Behavior when perfetto buffer is ful... |
 | OMNITRACE_PERFETTO_SHMEM_SIZE_HINT_KB   | Hint for shared-memory buffer size i... |
 | OMNITRACE_PRECISION                     | Set the global output precision for ... |
-| OMNITRACE_ROCTRACER_HSA_ACTIVITY        | Enable HSA activity tracing support     |
-| OMNITRACE_ROCTRACER_HSA_API             | Enable HSA API tracing support          |
-| OMNITRACE_ROCTRACER_HSA_API_TYPES       | HSA API type to collect                 |
 | OMNITRACE_SAMPLING_CPUS                 | CPUs to collect frequency informatio... |
 | OMNITRACE_SAMPLING_DELAY                | Number of seconds to wait before the... |
 | OMNITRACE_SAMPLING_FREQ                 | Number of software interrupts per se... |

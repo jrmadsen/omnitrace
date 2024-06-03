@@ -50,8 +50,6 @@ target_link_libraries(
         $<BUILD_INTERFACE:omnitrace::omnitrace-mpi>
         $<BUILD_INTERFACE:omnitrace::omnitrace-ptl>
         $<BUILD_INTERFACE:omnitrace::omnitrace-rocm>
-        $<BUILD_INTERFACE:omnitrace::omnitrace-rocprofiler-sdk>
-        $<BUILD_INTERFACE:omnitrace::omnitrace-rocm-smi>
         $<BUILD_INTERFACE:omnitrace::omnitrace-rccl>
         $<BUILD_INTERFACE:omnitrace::omnitrace-static-libgcc-optional>
         $<BUILD_INTERFACE:omnitrace::omnitrace-static-libstdcxx-optional>

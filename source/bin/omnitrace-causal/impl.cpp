@@ -818,11 +818,6 @@ parse_args(int argc, char** argv, std::vector<char*>& _env,
         add_default_env(_env, "OMNITRACE_USE_MPIP", true);
 #endif
 
-#if defined(OMNITRACE_USE_ROCPROFILER_SDK) && OMNITRACE_USE_ROCPROFILER_SDK > 0
-        add_default_env(_env, "OMNITRACE_ROCM_HIP_API", true);
-        add_default_env(_env, "OMNITRACE_ROCM_HSA_API", true);
-#endif
-
 #if defined(OMNITRACE_USE_RCCL) && OMNITRACE_USE_RCCL > 0
         add_default_env(_env, "OMNITRACE_USE_RCCLP", true);
 #endif

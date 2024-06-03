@@ -167,13 +167,9 @@ omnitrace_add_option(OMNITRACE_USE_CLANG_TIDY "Enable clang-tidy" OFF)
 omnitrace_add_option(OMNITRACE_USE_BFD
                      "Enable BFD support (map call-stack samples to LOC)" ON)
 omnitrace_add_option(OMNITRACE_USE_MPI "Enable MPI support" OFF)
-omnitrace_add_option(OMNITRACE_USE_ROCM "Enable ROCm support" ON)
+omnitrace_add_option(OMNITRACE_USE_ROCM "Enable ROCm support (rocprofiler-sdk, rocm-smi)"
+                     ON)
 omnitrace_add_option(OMNITRACE_USE_PAPI "Enable HW counter support via PAPI" ON)
-omnitrace_add_option(
-    OMNITRACE_USE_ROCM_SMI "Enable rocm-smi support for power/temp/etc. sampling"
-    ${OMNITRACE_USE_ROCM})
-omnitrace_add_option(OMNITRACE_USE_ROCPROFILER_SDK "Enable rocprofiler-sdk support"
-                     ${OMNITRACE_USE_ROCM})
 omnitrace_add_option(OMNITRACE_USE_RCCL "Enable RCCL support" ${OMNITRACE_USE_ROCM})
 omnitrace_add_option(OMNITRACE_USE_MPI_HEADERS
                      "Enable wrapping MPI functions w/o enabling MPI dependency" ON)
@@ -202,20 +198,10 @@ elseif("$ENV{OMNITRACE_CI}")
 endif()
 
 if(NOT OMNITRACE_USE_ROCM)
-    set(OMNITRACE_USE_ROCPROFILER_SDK
-        OFF
-        CACHE BOOL "Disabled via OMNITRACE_USE_ROCM=OFF" FORCE)
-    set(OMNITRACE_USE_ROCM_SMI
-        OFF
-        CACHE BOOL "Disabled via OMNITRACE_USE_ROCM=OFF" FORCE)
     set(OMNITRACE_USE_RCCL
         OFF
         CACHE BOOL "Disabled via OMNITRACE_USE_ROCM=OFF" FORCE)
-elseif(
-    OMNITRACE_USE_ROCM
-    AND NOT OMNITRACE_USE_ROCPROFILER_SDK
-    AND NOT OMNITRACE_USE_ROCM_SMI
-    AND NOT OMNITRACE_USE_RCCL)
+elseif(OMNITRACE_USE_ROCM AND NOT OMNITRACE_USE_RCCL)
     omnitrace_message(
         AUTHOR_WARNING
         "Setting OMNITRACE_USE_ROCM=OFF because rocprofiler-sdk, rccl, and rocm-smi options are disabled"
