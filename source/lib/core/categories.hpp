@@ -93,6 +93,7 @@ OMNITRACE_DEFINE_CATEGORY(category, user, OMNITRACE_CATEGORY_USER, "user", "User
 OMNITRACE_DEFINE_CATEGORY(category, python, OMNITRACE_CATEGORY_PYTHON, "python", "Python regions")
 OMNITRACE_DEFINE_CATEGORY(category, device_hip, OMNITRACE_CATEGORY_DEVICE_HIP, "device_hip", "Device-side functions submitted via HIP API")
 OMNITRACE_DEFINE_CATEGORY(category, device_hsa, OMNITRACE_CATEGORY_DEVICE_HSA, "device_hsa", "Device-side functions submitted via HSA API")
+OMNITRACE_DEFINE_CATEGORY(category, rocm, OMNITRACE_CATEGORY_ROCM, "rocm", "General ROCm tracing")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_hip, OMNITRACE_CATEGORY_ROCM_HIP, "rocm_hip", "Host-side HIP functions")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_hsa, OMNITRACE_CATEGORY_ROCM_HSA, "rocm_hsa", "Host-side HSA functions")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_roctx, OMNITRACE_CATEGORY_ROCM_ROCTX, "rocm_roctx", "ROCTx labels")
@@ -102,8 +103,6 @@ OMNITRACE_DEFINE_CATEGORY(category, rocm_smi_temp, OMNITRACE_CATEGORY_ROCM_SMI_T
 OMNITRACE_DEFINE_CATEGORY(category, rocm_smi_power, OMNITRACE_CATEGORY_ROCM_SMI_POWER, "device_power", "Power consumption of a GPU device")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_smi_memory_usage, OMNITRACE_CATEGORY_ROCM_SMI_MEMORY_USAGE, "device_memory_usage", "Memory usage of a GPU device")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_rccl, OMNITRACE_CATEGORY_ROCM_RCCL, "rccl", "ROCm Communication Collectives Library (RCCL) regions")
-OMNITRACE_DEFINE_CATEGORY(category, roctracer, OMNITRACE_CATEGORY_ROCTRACER, "roctracer", "Kernel tracing provided by roctracer")
-OMNITRACE_DEFINE_CATEGORY(category, rocprofiler, OMNITRACE_CATEGORY_ROCPROFILER, "rocprofiler", "HW counter data provided by rocprofiler")
 OMNITRACE_DEFINE_CATEGORY(category, pthread, OMNITRACE_CATEGORY_PTHREAD, "pthread", "POSIX threading functions")
 OMNITRACE_DEFINE_CATEGORY(category, kokkos, OMNITRACE_CATEGORY_KOKKOS, "kokkos", "KokkosTools regions")
 OMNITRACE_DEFINE_CATEGORY(category, mpi, OMNITRACE_CATEGORY_MPI, "mpi", "MPI regions")
@@ -153,6 +152,7 @@ using name = perfetto_category<Tp...>;
         OMNITRACE_PERFETTO_CATEGORY(category::sampling),                                 \
         OMNITRACE_PERFETTO_CATEGORY(category::device_hip),                               \
         OMNITRACE_PERFETTO_CATEGORY(category::device_hsa),                               \
+        OMNITRACE_PERFETTO_CATEGORY(category::rocm),                                     \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_hip),                                 \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_hsa),                                 \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_roctx),                               \
@@ -162,8 +162,6 @@ using name = perfetto_category<Tp...>;
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_smi_power),                           \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_smi_memory_usage),                    \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_rccl),                                \
-        OMNITRACE_PERFETTO_CATEGORY(category::roctracer),                                \
-        OMNITRACE_PERFETTO_CATEGORY(category::rocprofiler),                              \
         OMNITRACE_PERFETTO_CATEGORY(category::pthread),                                  \
         OMNITRACE_PERFETTO_CATEGORY(category::kokkos),                                   \
         OMNITRACE_PERFETTO_CATEGORY(category::mpi),                                      \
