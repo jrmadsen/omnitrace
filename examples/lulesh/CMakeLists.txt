@@ -13,7 +13,7 @@ endif()
 
 set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 string(REGEX REPLACE " -g(|[0-2]) " " -g3 " CMAKE_CXX_FLAGS_RELWITHDEBINFO
-                     "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+                     "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -Wno-deprecated-declarations")
 
 list(INSERT CMAKE_MODULE_PATH 0 ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
