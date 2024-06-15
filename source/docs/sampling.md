@@ -206,8 +206,6 @@ The snippet below shows the environment updates when `omnitrace-sample` is invok
 ```console
 $ omnitrace-sample -- ./parallel-overhead-locks 30 4 100
 
-HSA_TOOLS_LIB=/opt/omnitrace/lib/libomnitrace-dl.so.1.7.1
-HSA_TOOLS_REPORT_LOAD_FAILURE=1
 LD_PRELOAD=/opt/omnitrace/lib/libomnitrace-dl.so.1.7.1
 OMNITRACE_USE_PROCESS_SAMPLING=false
 OMNITRACE_USE_SAMPLING=true
@@ -222,8 +220,6 @@ The snippet below shows the environment updates when `omnitrace-sample` enables 
 ```console
 $ omnitrace-sample -PTDH -I all -- ./parallel-overhead-locks 30 4 100
 
-HSA_TOOLS_LIB=/opt/omnitrace/lib/libomnitrace-dl.so.1.7.1
-HSA_TOOLS_REPORT_LOAD_FAILURE=1
 KOKKOS_PROFILE_LIBRARY=/opt/omnitrace/lib/libomnitrace.so.1.7.1
 LD_PRELOAD=/opt/omnitrace/lib/libomnitrace-dl.so.1.7.1
 OMNITRACE_CPU_FREQ_ENABLED=true

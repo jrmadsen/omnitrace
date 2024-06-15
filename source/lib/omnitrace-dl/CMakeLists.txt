@@ -24,7 +24,8 @@ target_include_directories(
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../omnitrace-user>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/../omnitrace>
-           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE ${rocprofiler-sdk_INCLUDE_DIR})
 target_link_libraries(
     omnitrace-dl-library
     PUBLIC $<BUILD_INTERFACE:${dl_LIBRARY}> $<BUILD_INTERFACE:omnitrace::common-library>

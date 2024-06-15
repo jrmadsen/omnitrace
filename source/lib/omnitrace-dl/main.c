@@ -77,7 +77,14 @@ omnitrace_init(const char*, bool, const char*);
 extern char*
 basename(const char*);
 
-extern void omnitrace_set_main(main_func_t) OMNITRACE_INTERNAL_API;
+extern void
+omnitrace_set_main_init(main_func_t func) OMNITRACE_INTERNAL_API;
+
+extern void
+omnitrace_set_main(main_func_t func) OMNITRACE_INTERNAL_API;
+
+extern int
+omnitrace_main_init(int argc, char** argv, char** envp) OMNITRACE_INTERNAL_API;
 
 extern int
 omnitrace_main(int argc, char** argv, char** envp) OMNITRACE_INTERNAL_API;
@@ -99,6 +106,7 @@ omnitrace_libc_start_main(int (*_main)(int, char**, char**), int _argc, char** _
 
     // Save the real main function address
     omnitrace_set_main(_main);
+    omnitrace_set_main_init(_init);
 
     // Find the real __libc_start_main()
     start_main_t user_main = dlsym(RTLD_NEXT, "__libc_start_main");
@@ -116,8 +124,8 @@ omnitrace_libc_start_main(int (*_main)(int, char**, char**), int _argc, char** _
         else
         {
             // call omnitrace main function wrapper
-            return user_main(omnitrace_main, _argc, _argv, _init, _fini, _rtld_fini,
-                             _stack_end);
+            return user_main(omnitrace_main, _argc, _argv, omnitrace_main_init, _fini,
+                             _rtld_fini, _stack_end);
         }
     }
     else

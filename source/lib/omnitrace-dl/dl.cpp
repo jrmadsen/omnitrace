@@ -54,6 +54,10 @@
 #include <thread>
 #include <unistd.h>
 
+#if defined(OMNITRACE_USE_ROCM)
+#    include <rocprofiler-sdk/registration.h>
+#endif
+
 //--------------------------------------------------------------------------------------//
 
 #define OMNITRACE_DLSYM(VARNAME, HANDLE, FUNCNAME)                                       \
@@ -356,8 +360,7 @@ struct OMNITRACE_INTERNAL_API indirect
                         "kokkosp_dual_view_modify");
 
 #if OMNITRACE_USE_ROCM > 0
-        OMNITRACE_DLSYM(rocprofiler_configure_f, m_omnihandle, "OnLoad");
-
+        OMNITRACE_DLSYM(rocprofiler_configure_f, m_omnihandle, "rocprofiler_configure");
 #endif
 
 #if OMNITRACE_USE_OMPT == 0
@@ -632,7 +635,8 @@ extern "C"
             dl::get_active()          = true;
             dl::get_inited()          = true;
             dl::_omnitrace_dl_verbose = dl::get_omnitrace_dl_env();
-            if(dl::get_instrumented() < dl::InstrumentMode::PythonProfile)
+            if(dl::get_instrumented() > dl::InstrumentMode::None &&
+               dl::get_instrumented() < dl::InstrumentMode::PythonProfile)
                 dl::omnitrace_postinit((c) ? std::string{ c } : std::string{});
         }
     }
@@ -1186,6 +1190,10 @@ omnitrace_postinit(std::string _exe)
     {
         case InstrumentMode::None:
         case InstrumentMode::BinaryRewrite:
+        {
+            omnitrace_init_tooling();
+            break;
+        }
         case InstrumentMode::ProcessCreate:
         case InstrumentMode::ProcessAttach:
         {
@@ -1346,21 +1354,29 @@ verify_instrumented_preloaded()
 
 bool        _handle_preload = omnitrace_preload();
 main_func_t main_real       = nullptr;
+main_func_t init_real       = nullptr;
 }  // namespace
 }  // namespace dl
 }  // namespace omnitrace
 
 extern "C"
 {
+    int  omnitrace_main_init(int argc, char** argv, char** envp) OMNITRACE_INTERNAL_API;
     int  omnitrace_main(int argc, char** argv, char** envp) OMNITRACE_INTERNAL_API;
+    void omnitrace_set_main_init(main_func_t) OMNITRACE_INTERNAL_API;
     void omnitrace_set_main(main_func_t) OMNITRACE_INTERNAL_API;
+
+    void omnitrace_set_main_init(main_func_t _init_real)
+    {
+        ::omnitrace::dl::init_real = _init_real;
+    }
 
     void omnitrace_set_main(main_func_t _main_real)
     {
         ::omnitrace::dl::main_real = _main_real;
     }
 
-    int omnitrace_main(int argc, char** argv, char** envp)
+    int omnitrace_main_init(int argc, char** argv, char** envp)
     {
         OMNITRACE_DL_LOG(0, "%s\n", __FUNCTION__);
         using ::omnitrace::common::get_env;
@@ -1371,9 +1387,9 @@ extern "C"
         if(_reentry > 0) return -1;
         _reentry = 1;
 
-        if(!::omnitrace::dl::main_real)
-            throw std::runtime_error("[omnitrace][dl] Unsuccessful wrapping of main: "
-                                     "nullptr to real main function");
+        if(!::omnitrace::dl::init_real)
+            throw std::runtime_error("[omnitrace][dl] Unsuccessful wrapping of init: "
+                                     "nullptr to real init function");
 
         if(envp)
         {
@@ -1396,13 +1412,33 @@ extern "C"
             }
         }
 
+        auto ret = (*::omnitrace::dl::init_real)(argc, argv, envp);
+
         auto _mode = get_env("OMNITRACE_MODE", get_default_mode());
         omnitrace_init(_mode.c_str(),
                        dl::get_instrumented() == dl::InstrumentMode::BinaryRewrite,
                        argv[0]);
 
-        int ret = (*::omnitrace::dl::main_real)(argc, argv, envp);
+        return ret;
+    }
 
+    int omnitrace_main(int argc, char** argv, char** envp)
+    {
+        OMNITRACE_DL_LOG(0, "%s\n", __FUNCTION__);
+        // using ::omnitrace::common::get_env;
+        // using ::omnitrace::dl::get_default_mode;
+
+        // prevent re-entry
+        static int _reentry = 0;
+        if(_reentry > 0) return -1;
+        _reentry = 1;
+
+        if(!::omnitrace::dl::main_real)
+            throw std::runtime_error("[omnitrace][dl] Unsuccessful wrapping of main: "
+                                     "nullptr to real main function");
+
+        omnitrace_push_trace(basename(argv[0]));
+        int ret = (*::omnitrace::dl::main_real)(argc, argv, envp);
         omnitrace_pop_trace(basename(argv[0]));
         omnitrace_finalize();
 

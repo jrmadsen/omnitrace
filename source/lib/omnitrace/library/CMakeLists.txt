@@ -39,6 +39,7 @@ if(OMNITRACE_USE_ROCM)
         PRIVATE ${CMAKE_CURRENT_LIST_DIR}/rocm.cpp
                 ${CMAKE_CURRENT_LIST_DIR}/rocprofiler-sdk.cpp
                 ${CMAKE_CURRENT_LIST_DIR}/rocm_smi.cpp)
+    add_subdirectory(rocprofiler-sdk)
 endif()
 
 if(OMNITRACE_USE_RCCL)

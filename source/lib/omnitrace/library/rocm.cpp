@@ -26,6 +26,7 @@
 #include "core/dynamic_library.hpp"
 #include "core/gpu.hpp"
 #include "library/rocm_smi.hpp"
+#include "library/rocprofiler-sdk.hpp"
 #include "library/runtime.hpp"
 #include "library/thread_data.hpp"
 #include "library/tracing.hpp"
@@ -52,46 +53,7 @@ namespace rocm
 std::vector<hardware_counter_info>
 rocm_events()
 {
-    auto _events = std::vector<hardware_counter_info>{};
-    return _events;
+    return rocprofiler_sdk::get_rocm_events_info();
 }
 }  // namespace rocm
 }  // namespace omnitrace
-
-// HSA-runtime tool on-load method
-extern "C"
-{
-    bool OnLoad(HsaApiTable* table, uint64_t runtime_version, uint64_t failed_tool_count,
-                const char* const* failed_tool_names)
-    {
-        tim::consume_parameters(table, runtime_version, failed_tool_count,
-                                failed_tool_names);
-
-        static bool _once = false;
-        if(_once) return true;
-        _once = true;
-
-        OMNITRACE_SCOPED_SAMPLING_ON_CHILD_THREADS(false);
-
-        if(!tim::get_env("OMNITRACE_INIT_TOOLING", true)) return true;
-        if(!tim::settings::enabled()) return true;
-
-        OMNITRACE_BASIC_VERBOSE_F(1, "Loading ROCm tooling...\n");
-
-        if(!omnitrace::config::settings_are_configured() &&
-           omnitrace::get_state() < omnitrace::State::Active)
-            omnitrace_init_tooling_hidden();
-
-        OMNITRACE_SCOPED_THREAD_STATE(ThreadState::Internal);
-
-        if(omnitrace::get_use_process_sampling() && omnitrace::get_use_rocm_smi())
-        {
-            OMNITRACE_VERBOSE_F(1, "Setting rocm_smi state to active...\n");
-            omnitrace::rocm_smi::set_state(omnitrace::State::Active);
-        }
-
-        omnitrace::gpu::add_device_metadata();
-
-        return true;
-    }
-}

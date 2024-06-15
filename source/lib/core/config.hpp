@@ -104,8 +104,9 @@ bool
 set_setting_value(const std::string& _name, Tp&& _v,
                   settings::update_type _upd = settings::update_type::user)
 {
-    auto _instance = tim::settings::shared_instance();
-    auto _setting  = _instance->find(_name);
+    auto* _instance = tim::settings::instance();
+    if(!_instance) return false;
+    auto _setting = _instance->find(_name);
     if(_setting == _instance->end()) return false;
     if(!_setting->second) return false;
     auto& itr      = _setting->second;
@@ -119,8 +120,9 @@ template <typename Tp>
 bool
 set_default_setting_value(const std::string& _name, Tp&& _v)
 {
-    auto _instance = tim::settings::shared_instance();
-    auto _setting  = _instance->find(_name);
+    auto* _instance = tim::settings::instance();
+    if(!_instance) return false;
+    auto _setting = _instance->find(_name);
     if(_setting == _instance->end()) return false;
     if(!_setting->second) return false;
     if(_setting->second->get_config_updated() || _setting->second->get_environ_updated())
@@ -132,8 +134,8 @@ template <typename Tp>
 std::optional<Tp>
 get_setting_value(const std::string& _name)
 {
-    auto _instance = tim::settings::shared_instance();
-    if(!_instance) return std::optional<Tp>{};
+    auto* _instance = tim::settings::instance();
+    if(!_instance) return std::nullopt;
     auto _setting = _instance->find(_name);
     if(_setting == _instance->end() || !_setting->second) return std::optional<Tp>{};
     auto&& _ret = _setting->second->get<Tp>();
@@ -196,9 +198,6 @@ get_use_causal() OMNITRACE_HOT;
 
 bool
 get_use_rocm_smi() OMNITRACE_HOT;
-
-bool
-get_use_roctx();
 
 bool&
 get_use_sampling() OMNITRACE_HOT;

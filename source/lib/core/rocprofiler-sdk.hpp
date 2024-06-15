@@ -24,7 +24,15 @@
 
 #include "core/timemory.hpp"
 
+#if defined(OMNITRACE_USE_ROCM)
+#    include <rocprofiler-sdk/fwd.h>
+#    include <rocprofiler-sdk/rocprofiler.h>
+#endif
+
+#include <cstdint>
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace omnitrace
@@ -33,5 +41,27 @@ namespace rocprofiler_sdk
 {
 void
 config_settings(const std::shared_ptr<settings>&);
+
+#if defined(OMNITRACE_USE_ROCM)
+
+std::unordered_set<rocprofiler_callback_tracing_kind_t>
+get_callback_domains();
+
+std::unordered_set<rocprofiler_buffer_tracing_kind_t>
+get_buffered_domains();
+
+std::vector<uint32_t>
+get_operations(rocprofiler_callback_tracing_kind_t kindv);
+
+std::vector<std::string>
+get_rocm_events();
+
+std::unordered_set<uint32_t>
+get_backtrace_operations(rocprofiler_callback_tracing_kind_t kindv);
+
+std::unordered_set<uint32_t>
+get_backtrace_operations(rocprofiler_buffer_tracing_kind_t kindv);
+
+#endif
 }  // namespace rocprofiler_sdk
 }  // namespace omnitrace

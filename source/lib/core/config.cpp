@@ -319,11 +319,6 @@ configure_settings(bool _init)
         "Enable sampling GPU power, temp, utilization, and memory usage", true, "backend",
         "rocm_smi", "rocm", "process_sampling");
 
-    OMNITRACE_CONFIG_SETTING(
-        bool, "OMNITRACE_USE_ROCTX",
-        "Enable ROCtx API. Warning! Out-of-order ranges may corrupt perfetto flamegraph",
-        false, "backend", "rocm", "roctx");
-
     OMNITRACE_CONFIG_SETTING(bool, "OMNITRACE_USE_SAMPLING",
                              "Enable statistical sampling of call-stack", false,
                              "backend", "sampling");
@@ -565,7 +560,7 @@ configure_settings(bool _init)
         "from internal routines in omnitrace. E.g. when ON, the call-stack will show "
         "functions like omnitrace_push_trace. If disabled, omnitrace will attempt to "
         "filter out internal routines from the sampling call-stacks",
-        true, "sampling", "data", "advanced");
+        false, "sampling", "data", "advanced");
 
     OMNITRACE_CONFIG_SETTING(bool, "OMNITRACE_SAMPLING_INCLUDE_INLINES",
                              "Create entries for inlined functions when available", false,
@@ -1815,13 +1810,6 @@ get_use_rocm_smi()
 #else
     return false;
 #endif
-}
-
-bool
-get_use_roctx()
-{
-    static auto _v = get_config()->find("OMNITRACE_USE_ROCTX");
-    return static_cast<tim::tsettings<bool>&>(*_v->second).get();
 }
 
 bool&

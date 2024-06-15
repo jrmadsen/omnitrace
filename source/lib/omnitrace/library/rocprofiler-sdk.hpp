@@ -31,6 +31,8 @@ namespace omnitrace
 {
 namespace rocprofiler_sdk
 {
+using hardware_counter_info = ::tim::hardware_counters::info;
+
 void
 setup();
 
@@ -38,9 +40,21 @@ void
 shutdown();
 
 void
+config();
+
+void
+post_process();
+
+void
+sample();
+
+void
 start();
 
 void
 stop();
+
+std::vector<hardware_counter_info>
+get_rocm_events_info();
 }  // namespace rocprofiler_sdk
 }  // namespace omnitrace

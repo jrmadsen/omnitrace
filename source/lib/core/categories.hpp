@@ -91,11 +91,14 @@ OMNITRACE_DEFINE_CATEGORY(project, omnitrace, OMNITRACE_CATEGORY_NONE, "omnitrac
 OMNITRACE_DEFINE_CATEGORY(category, host, OMNITRACE_CATEGORY_HOST, "host", "Host-side function tracing")
 OMNITRACE_DEFINE_CATEGORY(category, user, OMNITRACE_CATEGORY_USER, "user", "User-defined regions")
 OMNITRACE_DEFINE_CATEGORY(category, python, OMNITRACE_CATEGORY_PYTHON, "python", "Python regions")
-OMNITRACE_DEFINE_CATEGORY(category, device_hip, OMNITRACE_CATEGORY_DEVICE_HIP, "device_hip", "Device-side functions submitted via HIP API")
-OMNITRACE_DEFINE_CATEGORY(category, device_hsa, OMNITRACE_CATEGORY_DEVICE_HSA, "device_hsa", "Device-side functions submitted via HSA API")
 OMNITRACE_DEFINE_CATEGORY(category, rocm, OMNITRACE_CATEGORY_ROCM, "rocm", "General ROCm tracing")
-OMNITRACE_DEFINE_CATEGORY(category, rocm_hip, OMNITRACE_CATEGORY_ROCM_HIP, "rocm_hip", "Host-side HIP functions")
-OMNITRACE_DEFINE_CATEGORY(category, rocm_hsa, OMNITRACE_CATEGORY_ROCM_HSA, "rocm_hsa", "Host-side HSA functions")
+OMNITRACE_DEFINE_CATEGORY(category, rocm_hip_api, OMNITRACE_CATEGORY_ROCM_HIP_API, "rocm_hip_api", "ROCm HIP functions")
+OMNITRACE_DEFINE_CATEGORY(category, rocm_hsa_api, OMNITRACE_CATEGORY_ROCM_HSA_API, "rocm_hsa_api", "ROCm HSA functions")
+OMNITRACE_DEFINE_CATEGORY(category, rocm_kernel_dispatch, OMNITRACE_CATEGORY_ROCM_KERNEL_DISPATCH, "rocm_kernel_dispatch", "ROCm Kernel dispatch")
+OMNITRACE_DEFINE_CATEGORY(category, rocm_memory_copy, OMNITRACE_CATEGORY_ROCM_MEMORY_COPY, "rocm_memory_copy", "ROCm Async Memory Copy")
+OMNITRACE_DEFINE_CATEGORY(category, rocm_scratch_memory, OMNITRACE_CATEGORY_ROCM_SCRATCH_MEMORY, "rocm_scratch_memory", "ROCm kernel scratch memory reallocations")
+OMNITRACE_DEFINE_CATEGORY(category, rocm_page_migration, OMNITRACE_CATEGORY_ROCM_PAGE_MIGRATION, "rocm_page_migration", "ROCm memory page migration")
+OMNITRACE_DEFINE_CATEGORY(category, rocm_counter_collection, OMNITRACE_CATEGORY_ROCM_COUNTER_COLLECTION, "rocm_counter_collection", "ROCm device counter collection")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_roctx, OMNITRACE_CATEGORY_ROCM_ROCTX, "rocm_roctx", "ROCTx labels")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_smi, OMNITRACE_CATEGORY_ROCM_SMI, "rocm_smi", "rocm-smi data")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_smi_busy, OMNITRACE_CATEGORY_ROCM_SMI_BUSY, "device_busy", "Busy percentage of a GPU device")
@@ -150,11 +153,14 @@ using name = perfetto_category<Tp...>;
         OMNITRACE_PERFETTO_CATEGORY(category::user),                                     \
         OMNITRACE_PERFETTO_CATEGORY(category::python),                                   \
         OMNITRACE_PERFETTO_CATEGORY(category::sampling),                                 \
-        OMNITRACE_PERFETTO_CATEGORY(category::device_hip),                               \
-        OMNITRACE_PERFETTO_CATEGORY(category::device_hsa),                               \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm),                                     \
-        OMNITRACE_PERFETTO_CATEGORY(category::rocm_hip),                                 \
-        OMNITRACE_PERFETTO_CATEGORY(category::rocm_hsa),                                 \
+        OMNITRACE_PERFETTO_CATEGORY(category::rocm_hip_api),                             \
+        OMNITRACE_PERFETTO_CATEGORY(category::rocm_hsa_api),                             \
+        OMNITRACE_PERFETTO_CATEGORY(category::rocm_kernel_dispatch),                     \
+        OMNITRACE_PERFETTO_CATEGORY(category::rocm_memory_copy),                         \
+        OMNITRACE_PERFETTO_CATEGORY(category::rocm_scratch_memory),                      \
+        OMNITRACE_PERFETTO_CATEGORY(category::rocm_page_migration),                      \
+        OMNITRACE_PERFETTO_CATEGORY(category::rocm_counter_collection),                  \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_roctx),                               \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_smi),                                 \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_smi_busy),                            \

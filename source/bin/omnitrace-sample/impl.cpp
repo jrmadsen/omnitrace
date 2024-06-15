@@ -740,7 +740,6 @@ parse_args(int argc, char** argv, std::vector<char*>& _env)
             _update("OMNITRACE_USE_OMPT", _v.count("ompt") > 0);
             _update("OMNITRACE_USE_ROCM", _v.count("rocm") > 0);
             _update("OMNITRACE_USE_RCCLP", _v.count("rcclp") > 0);
-            _update("OMNITRACE_USE_ROCTX", _v.count("roctx") > 0);
             _update("OMNITRACE_USE_ROCM_SMI", _v.count("rocm-smi") > 0);
             _update("OMNITRACE_TRACE_THREAD_LOCKS", _v.count("mutex-locks") > 0);
             _update("OMNITRACE_TRACE_THREAD_RW_LOCKS", _v.count("rw-locks") > 0);
@@ -765,18 +764,10 @@ parse_args(int argc, char** argv, std::vector<char*>& _env)
             _update("OMNITRACE_USE_OMPT", _v.count("ompt") > 0);
             _update("OMNITRACE_USE_ROCM", _v.count("rocm") > 0);
             _update("OMNITRACE_USE_RCCLP", _v.count("rcclp") > 0);
-            _update("OMNITRACE_USE_ROCTX", _v.count("roctx") > 0);
             _update("OMNITRACE_USE_ROCM_SMI", _v.count("rocm-smi") > 0);
             _update("OMNITRACE_TRACE_THREAD_LOCKS", _v.count("mutex-locks") > 0);
             _update("OMNITRACE_TRACE_THREAD_RW_LOCKS", _v.count("rw-locks") > 0);
             _update("OMNITRACE_TRACE_THREAD_SPIN_LOCKS", _v.count("spin-locks") > 0);
-
-            if(_v.count("all") > 0 ||
-               (_v.count("roctracer") > 0 && _v.count("rocprofiler") > 0))
-            {
-                remove_env(_env, "HSA_TOOLS_LIB");
-                remove_env(_env, "HSA_TOOLS_REPORT_LOAD_FAILURE");
-            }
 
             if(_v.count("all") > 0 || _v.count("rocprofiler") > 0)
             {
