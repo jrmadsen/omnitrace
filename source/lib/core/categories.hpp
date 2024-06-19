@@ -99,7 +99,7 @@ OMNITRACE_DEFINE_CATEGORY(category, rocm_memory_copy, OMNITRACE_CATEGORY_ROCM_ME
 OMNITRACE_DEFINE_CATEGORY(category, rocm_scratch_memory, OMNITRACE_CATEGORY_ROCM_SCRATCH_MEMORY, "rocm_scratch_memory", "ROCm kernel scratch memory reallocations")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_page_migration, OMNITRACE_CATEGORY_ROCM_PAGE_MIGRATION, "rocm_page_migration", "ROCm memory page migration")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_counter_collection, OMNITRACE_CATEGORY_ROCM_COUNTER_COLLECTION, "rocm_counter_collection", "ROCm device counter collection")
-OMNITRACE_DEFINE_CATEGORY(category, rocm_roctx, OMNITRACE_CATEGORY_ROCM_ROCTX, "rocm_roctx", "ROCTx labels")
+OMNITRACE_DEFINE_CATEGORY(category, rocm_marker_api, OMNITRACE_CATEGORY_ROCM_MARKER_API, "rocm_marker_api", "ROCTx labels")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_smi, OMNITRACE_CATEGORY_ROCM_SMI, "rocm_smi", "rocm-smi data")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_smi_busy, OMNITRACE_CATEGORY_ROCM_SMI_BUSY, "device_busy", "Busy percentage of a GPU device")
 OMNITRACE_DEFINE_CATEGORY(category, rocm_smi_temp, OMNITRACE_CATEGORY_ROCM_SMI_TEMP, "device_temp",   "Temperature of a GPU device")
@@ -161,7 +161,7 @@ using name = perfetto_category<Tp...>;
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_scratch_memory),                      \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_page_migration),                      \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_counter_collection),                  \
-        OMNITRACE_PERFETTO_CATEGORY(category::rocm_roctx),                               \
+        OMNITRACE_PERFETTO_CATEGORY(category::rocm_marker_api),                          \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_smi),                                 \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_smi_busy),                            \
         OMNITRACE_PERFETTO_CATEGORY(category::rocm_smi_temp),                            \

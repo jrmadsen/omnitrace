@@ -53,6 +53,9 @@ get_buffered_domains();
 std::vector<uint32_t>
 get_operations(rocprofiler_callback_tracing_kind_t kindv);
 
+std::vector<uint32_t>
+get_operations(rocprofiler_buffer_tracing_kind_t kindv);
+
 std::vector<std::string>
 get_rocm_events();
 

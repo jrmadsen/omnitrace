@@ -110,6 +110,10 @@ using counter_id_vec_t = std::vector<rocprofiler_counter_id_t>;
 using agent_counter_id_map_t =
     std::unordered_map<rocprofiler_agent_id_t, counter_id_vec_t>;
 
+using backtrace_operation_map_t =
+    std::unordered_map<rocprofiler_callback_tracing_kind_t,
+                       std::unordered_set<rocprofiler_tracing_operation_t>>;
+
 struct client_data
 {
     static constexpr size_t num_buffers  = 3;
@@ -125,11 +129,11 @@ struct client_data
 
     rocprofiler_client_id_t*                  client_id                 = nullptr;
     rocprofiler_client_finalize_t             client_fini               = nullptr;
-    rocprofiler_context_id_t                  primary_ctx               = { .handle = 0 };
-    rocprofiler_context_id_t                  counter_ctx               = { .handle = 0 };
-    rocprofiler_buffer_id_t                   kernel_dispatch_buffer    = { .handle = 0 };
-    rocprofiler_buffer_id_t                   memory_copy_buffer        = { .handle = 0 };
-    rocprofiler_buffer_id_t                   counter_collection_buffer = { .handle = 0 };
+    rocprofiler_context_id_t                  primary_ctx               = { 0 };
+    rocprofiler_context_id_t                  counter_ctx               = { 0 };
+    rocprofiler_buffer_id_t                   kernel_dispatch_buffer    = { 0 };
+    rocprofiler_buffer_id_t                   memory_copy_buffer        = { 0 };
+    rocprofiler_buffer_id_t                   counter_collection_buffer = { 0 };
     std::vector<rocprofiler_agent_v0_t>       agents                    = {};
     std::vector<tool_agent>                   cpu_agents                = {};
     std::vector<tool_agent>                   gpu_agents                = {};
@@ -141,6 +145,7 @@ struct client_data
     common::synchronized<kernel_symbol_vec_t> kernel_symbol_records     = {};
     buffer_name_info_t                        buffered_tracing_info     = {};
     callback_name_info_t                      callback_tracing_info     = {};
+    backtrace_operation_map_t                 backtrace_operations      = {};
 
     void                        initialize();
     void                        initialize_event_info();
@@ -228,14 +233,17 @@ as_client_data(void* _ptr)
 #if !defined(ROCPROFILER_CALL)
 #    define ROCPROFILER_CALL(result)                                                     \
         {                                                                                \
-            rocprofiler_status_t CHECKSTATUS = (result);                                 \
-            if(CHECKSTATUS != ROCPROFILER_STATUS_SUCCESS)                                \
+            rocprofiler_status_t OMNITRACE_VARIABLE(_rocp_status_, __LINE__) = (result); \
+            if(OMNITRACE_VARIABLE(_rocp_status_, __LINE__) !=                            \
+               ROCPROFILER_STATUS_SUCCESS)                                               \
             {                                                                            \
                 auto        msg        = std::stringstream{};                            \
-                std::string status_msg = rocprofiler_get_status_string(CHECKSTATUS);     \
+                std::string status_msg = rocprofiler_get_status_string(                  \
+                    OMNITRACE_VARIABLE(_rocp_status_, __LINE__));                        \
                 msg << "[" #result "][" << __FILE__ << ":" << __LINE__ << "] "           \
                     << "rocprofiler-sdk call [" << #result                               \
-                    << "] failed with error code " << CHECKSTATUS                        \
+                    << "] failed with error code "                                       \
+                    << OMNITRACE_VARIABLE(_rocp_status_, __LINE__)                       \
                     << " :: " << status_msg;                                             \
                 OMNITRACE_WARNING(0, "%s\n", msg.str().c_str());                         \
             }                                                                            \

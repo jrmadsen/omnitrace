@@ -24,6 +24,7 @@
 #include "core/config.hpp"
 #include "core/debug.hpp"
 #include "timemory.hpp"
+#include <regex>
 
 #if defined(OMNITRACE_USE_ROCM) && OMNITRACE_USE_ROCM > 0
 
@@ -89,8 +90,6 @@ get_setting_name(std::string _v)
             return _config->find(ENV_NAME)->second;                                      \
         }()
 
-}  // namespace
-
 template <typename Tp>
 std::string
 to_lower(const Tp& _val)
@@ -101,6 +100,124 @@ to_lower(const Tp& _val)
     return _v;
 }
 
+struct operation_options
+{
+    std::string operations_include            = {};
+    std::string operations_exclude            = {};
+    std::string operations_annotate_backtrace = {};
+};
+
+auto callback_operation_option_names =
+    std::unordered_map<rocprofiler_callback_tracing_kind_t, operation_options>{};
+auto buffered_operation_option_names =
+    std::unordered_map<rocprofiler_buffer_tracing_kind_t, operation_options>{};
+
+std::unordered_set<uint32_t>
+get_operations_impl(rocprofiler_callback_tracing_kind_t kindv,
+                    const std::string&                  optname = {})
+{
+    static const auto callback_tracing_info =
+        rocprofiler::sdk::get_callback_tracing_names();
+
+    if(optname.empty())
+    {
+        auto _ret = std::unordered_set<uint32_t>{};
+        for(auto iitr : callback_tracing_info[kindv].items())
+        {
+            if(iitr.second && *iitr.second != "none") _ret.emplace(iitr.first);
+        }
+        return _ret;
+    }
+
+    auto _val = get_setting_value<std::string>(optname);
+
+    OMNITRACE_CONDITIONAL_ABORT_F(!_val, "no setting %s\n", optname.c_str());
+
+    if(_val->empty()) return std::unordered_set<uint32_t>{};
+
+    auto _ret = std::unordered_set<uint32_t>{};
+    for(const auto& itr : tim::delimit(*_val, " ,;:\n\t"))
+    {
+        for(auto iitr : callback_tracing_info[kindv].items())
+        {
+            auto _re = std::regex{ itr, std::regex_constants::icase };
+            if(iitr.second && std::regex_search(iitr.second->data(), _re))
+            {
+                OMNITRACE_PRINT_F("%s ('%s') matched: %s\n", optname.c_str(), itr.c_str(),
+                                  iitr.second->data());
+                _ret.emplace(iitr.first);
+            }
+        }
+    }
+
+    return _ret;
+}
+
+std::unordered_set<uint32_t>
+get_operations_impl(rocprofiler_buffer_tracing_kind_t kindv,
+                    const std::string&                optname = {})
+{
+    static const auto buffered_tracing_info =
+        rocprofiler::sdk::get_buffer_tracing_names();
+
+    if(optname.empty())
+    {
+        auto _ret = std::unordered_set<uint32_t>{};
+        for(auto iitr : buffered_tracing_info[kindv].items())
+        {
+            if(iitr.second && *iitr.second != "none") _ret.emplace(iitr.first);
+        }
+        return _ret;
+    }
+
+    auto _val = get_setting_value<std::string>(optname);
+
+    OMNITRACE_CONDITIONAL_ABORT_F(!_val, "no setting %s\n", optname.c_str());
+
+    if(_val->empty()) return std::unordered_set<uint32_t>{};
+
+    auto _ret = std::unordered_set<uint32_t>{};
+    for(const auto& itr : tim::delimit(*_val, " ,;:\n\t"))
+    {
+        for(auto iitr : buffered_tracing_info[kindv].items())
+        {
+            auto _re = std::regex{ itr, std::regex_constants::icase };
+            if(iitr.second && std::regex_search(iitr.second->data(), _re))
+            {
+                OMNITRACE_PRINT_F("%s ('%s') matched: %s\n", optname.c_str(), itr.c_str(),
+                                  iitr.second->data());
+                _ret.emplace(iitr.first);
+            }
+        }
+    }
+    return _ret;
+}
+
+std::vector<uint32_t>
+get_operations_impl(const std::unordered_set<uint32_t>& _complete,
+                    const std::unordered_set<uint32_t>& _include,
+                    const std::unordered_set<uint32_t>& _exclude)
+{
+    auto _convert = [](const auto& _dset) {
+        auto _dret = std::vector<uint32_t>{};
+        _dret.reserve(_dset.size());
+        for(auto itr : _dset)
+            _dret.emplace_back(itr);
+        std::sort(_dret.begin(), _dret.end());
+        return _dret;
+    };
+
+    if(_include.empty() && _exclude.empty()) return _convert(_complete);
+
+    auto _ret = (_include.empty()) ? _complete : _include;
+    for(auto itr : _exclude)
+        _ret.erase(itr);
+
+    return _convert(_ret);
+}
+
+}  // namespace
+
 void
 config_settings(const std::shared_ptr<settings>& _config)
 {
@@ -109,8 +226,13 @@ config_settings(const std::shared_ptr<settings>& _config)
     const auto callback_tracing_info = rocprofiler::sdk::get_callback_tracing_names();
 
     auto _skip_domains =
-        std::unordered_set<std::string_view>{ "marker_core_api", "marker_control_api",
-                                              "marker_name_api", "none", "code_object" };
+        std::unordered_set<std::string_view>{ "none",
+                                              "correlation_id_retirement",
+                                              "marker_core_api",
+                                              "marker_control_api",
+                                              "marker_name_api",
+                                              "code_object" };
+
     auto _domain_choices = std::vector<std::string>{};
     auto _add_domain     = [&_domain_choices, &_skip_domains](std::string_view _domain) {
         auto _v = to_lower(_domain);
@@ -123,14 +245,16 @@ config_settings(const std::shared_ptr<settings>& _config)
     };
 
     static auto _option_names           = std::unordered_set<std::string>{};
-    auto        _add_operation_settings = [&_config,
-                                    &_skip_domains](std::string_view _domain_name,
-                                                    const auto&      _domain) {
+    auto        _add_operation_settings = [&_config, &_skip_domains](
+                                       std::string_view _domain_name, const auto& _domain,
+                                       auto& _operation_option_names) {
         auto _v = to_lower(_domain_name);
 
         if(_skip_domains.count(_v) > 0) return;
 
         auto _op_option_name = JOIN('_', "OMNITRACE_ROCM", _domain_name, "OPERATIONS");
+        auto _eop_option_name =
+            JOIN('_', "OMNITRACE_ROCM", _domain_name, "OPERATIONS_EXCLUDE");
         auto _bt_option_name =
             JOIN('_', "OMNITRACE_ROCM", _domain_name, "OPERATIONS_ANNOTATE_BACKTRACE");
 
@@ -140,12 +264,26 @@ config_settings(const std::shared_ptr<settings>& _config)
 
         if(_op_choices.empty()) return;
 
+        _operation_option_names.emplace(
+            _domain.value,
+            operation_options{ _op_option_name, _eop_option_name, _bt_option_name });
+
         if(_option_names.emplace(_op_option_name).second)
         {
             OMNITRACE_CONFIG_SETTING(
                 std::string, _op_option_name.c_str(),
-                "Specification of operations for domain (for API domains, this is a list "
-                "of function names) [regex supported]",
+                "Inclusive filter for domain operations (for API domains, this selects "
+                "the functions to trace) [regex supported]",
+                std::string{}, "rocm", "rocprofiler-sdk", "advanced")
+                ->set_choices(_op_choices);
+        }
+
+        if(_option_names.emplace(_eop_option_name).second)
+        {
+            OMNITRACE_CONFIG_SETTING(
+                std::string, _eop_option_name.c_str(),
+                "Exclusive filter for domain operations applied after the inclusive "
+                "filter (for API domains, removes function from trace) [regex supported]",
                 std::string{}, "rocm", "rocprofiler-sdk", "advanced")
                 ->set_choices(_op_choices);
         }
@@ -175,8 +313,12 @@ config_settings(const std::shared_ptr<settings>& _config)
 
     std::sort(_domain_choices.begin(), _domain_choices.end());
 
-    OMNITRACE_CONFIG_SETTING(std::string, "OMNITRACE_ROCM_DOMAINS",
-                             "Specification of ROCm domains to trace/profile",
+    namespace join = ::timemory::join;
+    auto _domain_description =
+        JOIN("", "Specification of ROCm domains to trace/profile. Choices: ",
+             join::join(join::array_config{ ", ", "", "" }, _domain_choices));
+
+    OMNITRACE_CONFIG_SETTING(std::string, "OMNITRACE_ROCM_DOMAINS", _domain_description,
                              std::string{ "hip_runtime_api,marker_api,kernel_dispatch,"
                                           "memory_copy,scratch_memory,page_migration" },
                              "rocm", "rocprofiler-sdk")
@@ -194,14 +336,14 @@ config_settings(const std::shared_ptr<settings>& _config)
     _skip_domains.emplace("scratch_memory");
 
     _add_operation_settings(
-        "MARKER_API",
-        callback_tracing_info[ROCPROFILER_CALLBACK_TRACING_MARKER_CORE_API]);
+        "MARKER_API", callback_tracing_info[ROCPROFILER_CALLBACK_TRACING_MARKER_CORE_API],
+        callback_operation_option_names);
 
     for(const auto& itr : callback_tracing_info)
-        _add_operation_settings(itr.name, itr);
+        _add_operation_settings(itr.name, itr, callback_operation_option_names);
 
     for(const auto& itr : buffered_tracing_info)
-        _add_operation_settings(itr.name, itr);
+        _add_operation_settings(itr.name, itr, buffered_operation_option_names);
 }
 
 std::unordered_set<rocprofiler_callback_tracing_kind_t>
@@ -241,20 +383,19 @@ get_callback_domains()
                             itr.c_str());
         }
 
-        OMNITRACE_PRINT_F("- domain: %s\n", itr.c_str());
         if(itr == "hsa_api")
         {
-            for(auto itr : { ROCPROFILER_CALLBACK_TRACING_HSA_CORE_API,
-                             ROCPROFILER_CALLBACK_TRACING_HSA_AMD_EXT_API,
-                             ROCPROFILER_CALLBACK_TRACING_HSA_IMAGE_EXT_API,
-                             ROCPROFILER_CALLBACK_TRACING_HSA_FINALIZE_EXT_API })
-                _data.emplace(itr);
+            for(auto eitr : { ROCPROFILER_CALLBACK_TRACING_HSA_CORE_API,
+                              ROCPROFILER_CALLBACK_TRACING_HSA_AMD_EXT_API,
+                              ROCPROFILER_CALLBACK_TRACING_HSA_IMAGE_EXT_API,
+                              ROCPROFILER_CALLBACK_TRACING_HSA_FINALIZE_EXT_API })
+                _data.emplace(eitr);
         }
         else if(itr == "hip_api")
         {
-            for(auto itr : { ROCPROFILER_CALLBACK_TRACING_HIP_COMPILER_API,
-                             ROCPROFILER_CALLBACK_TRACING_HIP_COMPILER_API })
-                _data.emplace(itr);
+            for(auto eitr : { ROCPROFILER_CALLBACK_TRACING_HIP_COMPILER_API,
+                              ROCPROFILER_CALLBACK_TRACING_HIP_COMPILER_API })
+                _data.emplace(eitr);
         }
         else if(itr == "marker_api" || itr == "roctx")
         {
@@ -269,14 +410,11 @@ get_callback_domains()
                 if(itr == to_lower(ditr.name) && supported.count(dval) > 0)
                 {
                     _data.emplace(dval);
-                    OMNITRACE_PRINT_F("- domain: %s (found)\n", itr.c_str());
                     break;
                 }
             }
         }
     }
-
-    OMNITRACE_PRINT_F("- domains: %zu\n", _data.size());
 
     return _data;
 }
@@ -313,20 +451,19 @@ get_buffered_domains()
                             itr.c_str());
         }
 
-        OMNITRACE_PRINT_F("- domain: %s\n", itr.c_str());
         if(itr == "hsa_api")
         {
-            for(auto itr : { ROCPROFILER_BUFFER_TRACING_HSA_CORE_API,
-                             ROCPROFILER_BUFFER_TRACING_HSA_AMD_EXT_API,
-                             ROCPROFILER_BUFFER_TRACING_HSA_IMAGE_EXT_API,
-                             ROCPROFILER_BUFFER_TRACING_HSA_FINALIZE_EXT_API })
-                _data.emplace(itr);
+            for(auto eitr : { ROCPROFILER_BUFFER_TRACING_HSA_CORE_API,
+                              ROCPROFILER_BUFFER_TRACING_HSA_AMD_EXT_API,
+                              ROCPROFILER_BUFFER_TRACING_HSA_IMAGE_EXT_API,
+                              ROCPROFILER_BUFFER_TRACING_HSA_FINALIZE_EXT_API })
+                _data.emplace(eitr);
         }
         else if(itr == "hip_api")
         {
-            for(auto itr : { ROCPROFILER_BUFFER_TRACING_HIP_COMPILER_API,
-                             ROCPROFILER_BUFFER_TRACING_HIP_COMPILER_API })
-                _data.emplace(itr);
+            for(auto eitr : { ROCPROFILER_BUFFER_TRACING_HIP_COMPILER_API,
+                              ROCPROFILER_BUFFER_TRACING_HIP_COMPILER_API })
+                _data.emplace(eitr);
         }
         else if(itr == "marker_api" || itr == "roctx")
         {
@@ -340,15 +477,12 @@ get_buffered_domains()
                 auto dval = static_cast<rocprofiler_buffer_tracing_kind_t>(idx);
                 if(itr == to_lower(ditr.name) && supported.count(dval) > 0)
                 {
-                    OMNITRACE_PRINT_F("- domain: %s (found)\n", itr.c_str());
                     _data.emplace(dval);
                     break;
                 }
             }
         }
     }
-
-    OMNITRACE_PRINT_F("- domains: %zu\n", _data.size());
 
     return _data;
 }
@@ -364,24 +498,66 @@ get_rocm_events()
 std::vector<uint32_t>
 get_operations(rocprofiler_callback_tracing_kind_t kindv)
 {
-    (void) kindv;
-    return std::vector<uint32_t>{};
+    OMNITRACE_CONDITIONAL_ABORT_F(
+        callback_operation_option_names.count(kindv) == 0,
+        "callback_operation_operation_names does not have value for %i\n", kindv);
+
+    auto _complete = get_operations_impl(kindv);
+    auto _include  = get_operations_impl(
+        kindv, callback_operation_option_names.at(kindv).operations_include);
+    auto _exclude = get_operations_impl(
+        kindv, callback_operation_option_names.at(kindv).operations_exclude);
+
+    return get_operations_impl(_complete, _include, _exclude);
+}
+
+std::vector<uint32_t>
+get_operations(rocprofiler_buffer_tracing_kind_t kindv)
+{
+    OMNITRACE_CONDITIONAL_ABORT_F(
+        buffered_operation_option_names.count(kindv) == 0,
+        "buffered_operation_option_names does not have value for %i\n", kindv);
+
+    auto _complete = get_operations_impl(kindv);
+    auto _include  = get_operations_impl(
+        kindv, buffered_operation_option_names.at(kindv).operations_include);
+    auto _exclude = get_operations_impl(
+        kindv, buffered_operation_option_names.at(kindv).operations_exclude);
+
+    return get_operations_impl(_complete, _include, _exclude);
 }
 
 std::unordered_set<uint32_t>
 get_backtrace_operations(rocprofiler_callback_tracing_kind_t kindv)
 {
-    (void) kindv;
-    return std::unordered_set<uint32_t>{};
+    OMNITRACE_CONDITIONAL_ABORT_F(
+        callback_operation_option_names.count(kindv) == 0,
+        "callback_operation_operation_names does not have value for %i\n", kindv);
+
+    auto _data = get_operations_impl(
+        kindv, callback_operation_option_names.at(kindv).operations_annotate_backtrace);
+    auto _ret = std::unordered_set<uint32_t>{};
+    _ret.reserve(_data.size());
+    for(auto itr : _data)
+        _ret.emplace(itr);
+    return _ret;
 }
 
 std::unordered_set<uint32_t>
 get_backtrace_operations(rocprofiler_buffer_tracing_kind_t kindv)
 {
-    (void) kindv;
-    return std::unordered_set<uint32_t>{};
-}
+    OMNITRACE_CONDITIONAL_ABORT_F(
+        buffered_operation_option_names.count(kindv) == 0,
+        "buffered_operation_option_names does not have value for %i\n", kindv);
 
+    auto _data = get_operations_impl(
+        kindv, buffered_operation_option_names.at(kindv).operations_annotate_backtrace);
+    auto _ret = std::unordered_set<uint32_t>{};
+    _ret.reserve(_data.size());
+    for(auto itr : _data)
+        _ret.emplace(itr);
+    return _ret;
+}
 }  // namespace rocprofiler_sdk
 }  // namespace omnitrace
 

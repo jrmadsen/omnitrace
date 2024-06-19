@@ -65,7 +65,7 @@ omnitrace_add_test(
 if(OMNITRACE_USE_ROCM)
     set(_ROCP_PASS_REGEX
         "rocprof-device-0-GRBM_COUNT.txt(.*)rocprof-device-0-SQ_INSTS_VALU.txt(.*)rocprof-device-0-SQ_WAVES.txt(.*)rocprof-device-0-TA_TA_BUSY.txt(.*)rocprof-device-0-TCC_HIT_sum.txt"
-    )
+        )
     omnitrace_add_test(
         SKIP_BASELINE SKIP_RUNTIME
         NAME transpose-rocprofiler
